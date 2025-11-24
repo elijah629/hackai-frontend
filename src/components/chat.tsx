@@ -48,6 +48,7 @@ import { useRouter } from "next/navigation";
 import { ChatMessages } from "./chat-messages";
 import { Badge } from "./ui/badge";
 import { getDisplayModelName } from "@/lib/utils";
+import { nanoid } from "nanoid";
 
 const suggestions = [
   "What are the latest trends in AI?",
@@ -92,6 +93,16 @@ function InnerChat({
   );
   const [text, setText] = useState(storedChat?.input ?? "");
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+
+  // Track if this chat has *ever* existed in Dexie
+  const [hadStoredChat, setHadStoredChat] = useState(!!storedChat);
+
+  useEffect(() => {
+    if (storedChat) {
+      setHadStoredChat(true);
+    }
+  }, [storedChat]);
+
   const { messages, sendMessage, status, regenerate, id } = useChat({
     id: chatId,
     messages: storedChat?.messages ?? [],
@@ -101,11 +112,14 @@ function InnerChat({
     },
   });
 
+  // Sync messages/model/etc. -> Dexie
   useEffect(() => {
     if (messages.length === 0) return;
 
-    if (chatId && !storedChat && messages.length !== 1) {
-      router.replace(`/`);
+    // If this chat used to exist but was deleted from Dexie,
+    // don't recreate it just because messages are still in memory.
+    if (!storedChat && hadStoredChat) {
+      router.replace(`/c/${nanoid()}`);
       return;
     }
 
@@ -126,12 +140,15 @@ function InnerChat({
     };
 
     db.chats.put(chatRow);
-  }, [messages, text, id, model, storedChat?.title, storedChat?.createdAt]);
+  }, [messages, text, id, model, storedChat, chatId, hadStoredChat, router]);
 
+  // Title + emoji generation for *new* chats only
   useEffect(() => {
     if (messages.length !== 1) return;
     if (messages[0].role !== "user") return;
     if (storedChat?.title || storedChat?.icon) return;
+
+    if (!storedChat && hadStoredChat) return;
 
     const now = Date.now();
 
@@ -160,7 +177,7 @@ function InnerChat({
 
       db.chats.put({ ...chatRow, title, icon: emoji });
     })();
-  }, [messages, id, storedChat?.title, storedChat?.icon]);
+  }, [messages, id, storedChat, chatId, hadStoredChat, model, text]);
 
   const chefs: string[] = useMemo(
     () => Array.from(new Set(models.map((x) => x.chef))).sort(),
@@ -195,7 +212,6 @@ function InnerChat({
 
   const isSubmitDisabled =
     !text.trim() || status === "streaming" || status === "submitted";
-
   return (
     <div className="flex size-full flex-col divide-y overflow-hidden">
       <Conversation>
