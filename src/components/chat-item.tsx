@@ -26,7 +26,7 @@ export function ChatItem({ chat }: { chat: ChatRow }) {
   return (
     <>
       <SidebarMenuItem>
-        <SidebarMenuButton asChild>
+        <SidebarMenuButton asChild title={`${chat.icon} ${chat.title}`}>
           <Link href={`/c/${chat.id}`} className="flex items-center">
             <span className="size-5 inline-flex items-center justify-center">
               {chat.icon}

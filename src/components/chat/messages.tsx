@@ -19,19 +19,21 @@ import {
   MessageAction,
   MessageActions,
 } from "@/components/ai-elements/message";
-import { CopyIcon, MessageSquare, RefreshCcwIcon } from "lucide-react";
+import { CopyIcon, MessageSquare, RefreshCcwIcon, Trash2 } from "lucide-react";
 import { UIMessage, UseChatHelpers } from "@ai-sdk/react";
 import { cn, shikiThemes } from "@/lib/utils";
-import { ConversationEmptyState } from "./ai-elements/conversation";
+import { ConversationEmptyState } from "@/components/ai-elements/conversation";
 
 export function ChatMessages({
   messages,
   regenerate,
   status,
+  onDeleteMessage,
 }: {
   messages: UIMessage[];
   regenerate: UseChatHelpers<UIMessage>["regenerate"];
   status: UseChatHelpers<UIMessage>["status"];
+  onDeleteMessage?: (messageId: string) => void;
 }) {
   return (
     <>
@@ -101,6 +103,19 @@ export function ChatMessages({
                         </MessageAction>
                       </MessageActions>
                     )}
+                    {message.role === "user" &&
+                      messageIndex !== 0 &&
+                      onDeleteMessage && (
+                        <MessageActions className="justify-end">
+                          <MessageAction
+                            onClick={() => onDeleteMessage(message.id)}
+                            label="Delete from here"
+                            tooltip="Delete this and all later messages"
+                          >
+                            <Trash2 className="size-3" />
+                          </MessageAction>
+                        </MessageActions>
+                      )}
                   </Message>
                 );
               case "reasoning":
@@ -119,7 +134,9 @@ export function ChatMessages({
                     }
                   >
                     <ReasoningTrigger />
-                    <ReasoningContent>{part.text}</ReasoningContent>
+                    <ReasoningContent className="text-muted-foreground!">
+                      {part.text}
+                    </ReasoningContent>
                   </Reasoning>
                 );
 

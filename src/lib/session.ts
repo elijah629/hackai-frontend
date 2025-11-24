@@ -6,8 +6,14 @@ export interface SessionData {
 
 export const defaultSession: SessionData = {};
 
+const cookieSecret = process.env.COOKIE_SECRET;
+
+if (!cookieSecret) {
+  throw new Error("Missing COOKIE_SECRET environment variable for sessions.");
+}
+
 export const sessionOptions: SessionOptions = {
-  password: process.env.COOKIE_SECRET!,
+  password: cookieSecret,
   cookieName: "hc-ai-api-key",
   cookieOptions: {
     secure: process.env.NODE_ENV === "production",

@@ -47,6 +47,12 @@
 :root {
   --radius: 0.625rem;
 
+  --text-xs: 0.8rem;
+  --text-xs--line-height: calc(1 / 0.89);
+
+  --text-sm: 1rem;
+  --text-sm--line-height: calc(1.25 / 1.04);
+
   --primary: #ec3750;
 
   --rosewater: hsl(11deg, 59%, 67%);
