@@ -56,7 +56,7 @@ export function ChatItem({ chat }: { chat: ChatRow }) {
               onSelect={() => db.chats.delete(chat.id)}
             >
               <Trash2 className="text-muted-foreground" />
-              Delete Chat
+              Delete chat
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

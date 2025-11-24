@@ -24,9 +24,11 @@ import { useState } from "react";
 import { logout } from "@/app/actions";
 import { ThemeToggle } from "./theme-toggle";
 import { db } from "@/lib/chat-store";
+import { useLiveQuery } from "dexie-react-hooks";
 
 export function NavUser({ hasApiKey }: { hasApiKey: boolean }) {
   const { isMobile } = useSidebar();
+  const chatCount = useLiveQuery(() => db.chats.count());
   const [showApiKeyDialog, setApiKeyDialog] = useState(false);
 
   return (
@@ -83,6 +85,7 @@ export function NavUser({ hasApiKey }: { hasApiKey: boolean }) {
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem
+                disabled={chatCount === 0}
                 onSelect={() => db.chats.clear()}
                 variant="destructive"
               >

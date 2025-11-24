@@ -822,18 +822,26 @@ export const PromptInputTextarea = ({
     textarea.style.height = `${newHeight}px`;
   };
 
+  const isCoarsePointer =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(pointer: coarse)").matches;
+
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
     if (e.key === "Enter") {
+      if (isCoarsePointer) return;
+
       if (isComposing || e.nativeEvent.isComposing) return;
       if (e.shiftKey) return;
+
       e.preventDefault();
 
       const form = e.currentTarget.form;
       const submitButton = form?.querySelector(
         'button[type="submit"]',
       ) as HTMLButtonElement | null;
-      if (submitButton?.disabled) return;
 
+      if (submitButton?.disabled) return;
       form?.requestSubmit();
     }
 
