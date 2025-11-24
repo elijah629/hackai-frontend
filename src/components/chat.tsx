@@ -5,58 +5,23 @@ import {
   ConversationContent,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import {
-  PromptInput,
-  PromptInputActionAddAttachments,
-  PromptInputActionMenu,
-  PromptInputActionMenuContent,
-  PromptInputActionMenuTrigger,
-  PromptInputAttachment,
-  PromptInputAttachments,
-  PromptInputBody,
-  PromptInputButton,
-  PromptInputFooter,
-  PromptInputHeader,
-  type PromptInputMessage,
-  PromptInputSubmit,
-  PromptInputTextarea,
-  PromptInputTools,
-} from "@/components/ai-elements/prompt-input";
-import {
-  ModelSelector,
-  ModelSelectorContent,
-  ModelSelectorEmpty,
-  ModelSelectorGroup,
-  ModelSelectorInput,
-  ModelSelectorItem,
-  ModelSelectorList,
-  ModelSelectorLogo,
-  ModelSelectorName,
-  ModelSelectorTrigger,
-} from "@/components/ai-elements/model-selector";
-
-import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
-import { CheckIcon } from "lucide-react";
+import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import { useEffect, useMemo, useState } from "react";
 import { Model } from "@/lib/hackclub";
 import { useChat } from "@ai-sdk/react";
-import { Loader } from "./ai-elements/loader";
 import { ChatRow, db } from "@/lib/chat-store";
 import { useLiveQuery } from "dexie-react-hooks";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { ChatMessages } from "./chat-messages";
-import { Badge } from "./ui/badge";
-import { getDisplayModelName } from "@/lib/utils";
 import { nanoid } from "nanoid";
-
-const suggestions = [
-  "What are the latest trends in AI?",
-  "Explain quantum computing",
-  "Best practices for React development",
-  "Tell me about TypeScript benefits",
-  "What is the difference between SQL and NoSQL?",
-];
+import {
+  normalizeSubmissionModalities,
+  useModelCompatibility,
+  useRequiredModalities,
+} from "./chat/use-chat-compatibility";
+import { ChatPrompt, ConversationLoader } from "./chat/chat-prompt";
+import { Loader } from "./ai-elements/loader";
 
 const defaultModel = "google/gemini-2.5-flash";
 
@@ -103,7 +68,13 @@ function InnerChat({
     }
   }, [storedChat]);
 
-  const { messages, sendMessage, status, regenerate, id } = useChat({
+  useEffect(() => {
+    if (storedChat?.input && !text) {
+      setText(storedChat.input);
+    }
+  }, [storedChat, text]);
+
+  const { messages, sendMessage, setMessages, status, regenerate, id } = useChat({
     id: chatId,
     messages: storedChat?.messages ?? [],
     onError: (e) => {
@@ -127,7 +98,7 @@ function InnerChat({
 
     const chatRow: ChatRow = {
       id,
-      lastModel: model,
+      lastModel: effectiveModel ?? model,
       messages,
       input: text,
       title: storedChat?.title ?? "New Chat",
@@ -140,7 +111,17 @@ function InnerChat({
     };
 
     db.chats.put(chatRow);
-  }, [messages, text, id, model, storedChat, chatId, hadStoredChat, router]);
+  }, [
+    messages,
+    text,
+    id,
+    model,
+    storedChat,
+    chatId,
+    hadStoredChat,
+    router,
+    effectiveModel,
+  ]);
 
   // Title + emoji generation for *new* chats only
   useEffect(() => {
@@ -154,7 +135,7 @@ function InnerChat({
 
     const chatRow: ChatRow = {
       id,
-      lastModel: model,
+      lastModel: effectiveModel ?? model,
       messages,
       input: text,
       title: storedChat?.title ?? "New Chat",
@@ -177,20 +158,80 @@ function InnerChat({
 
       db.chats.put({ ...chatRow, title, icon: emoji });
     })();
-  }, [messages, id, storedChat, chatId, hadStoredChat, model, text]);
+  }, [
+    messages,
+    id,
+    storedChat,
+    chatId,
+    hadStoredChat,
+    model,
+    text,
+    effectiveModel,
+  ]);
 
   const chefs: string[] = useMemo(
     () => Array.from(new Set(models.map((x) => x.chef))).sort(),
     [models],
   );
 
+  const { requiredInputModalities, hasModalRequirements } = useRequiredModalities(messages);
+
+  const { compatibilityByModel, firstCompatibleModelId, hasModels, hasCompatibleModels } =
+    useModelCompatibility(models, requiredInputModalities);
+
   const selectedModelData = models.find((m) => m.id === model);
+
+  useEffect(() => {
+    if (!models.length) return;
+
+    if (!selectedModelData) {
+      if (firstCompatibleModelId) {
+        setModel(firstCompatibleModelId);
+      } else if (models[0]) {
+        setModel(models[0].id);
+      }
+    }
+  }, [firstCompatibleModelId, models, selectedModelData]);
+
+  const effectiveModel = selectedModelData?.id ?? firstCompatibleModelId;
+  const activeModelData = models.find((m) => m.id === effectiveModel);
+  const promptPlaceholder = effectiveModel
+    ? "Ask anything"
+    : hasModels
+      ? "No compatible models for this conversation"
+      : "Add a model to start chatting";
 
   const handleSubmit = (message: PromptInputMessage) => {
     const hasText = Boolean(message.text?.trim());
     const hasAttachments = Boolean(message.files?.length);
 
     if (!hasText && !hasAttachments) return;
+
+    if (!effectiveModel || !activeModelData) {
+      toast.error("No available models right now. Try again later.");
+      return;
+    }
+
+    const compatibility = compatibilityByModel.get(activeModelData.id);
+
+    if (compatibility && compatibility.missingInputs.length > 0) {
+      toast.error("Selected model cannot handle this conversation's requirements.");
+      return;
+    }
+
+    const submissionInputRequirements = normalizeSubmissionModalities(message);
+
+    const missingSubmissionInputs = Array.from(submissionInputRequirements).filter(
+      (requirement) =>
+        !(activeModelData.architecture?.input_modalities ?? []).includes(requirement),
+    );
+
+    if (missingSubmissionInputs.length > 0) {
+      toast.error(
+        `Selected model can't process ${missingSubmissionInputs.join(", ")} input for this message.`,
+      );
+      return;
+    }
 
     setText("");
     sendMessage(
@@ -200,18 +241,40 @@ function InnerChat({
       },
       {
         body: {
-          model,
+          model: effectiveModel,
         },
       },
     );
   };
 
   const handleSuggestionClick = (suggestion: string) => {
-    sendMessage({ text: suggestion }, { body: { model } });
+    if (!effectiveModel) {
+      toast.error("No available models right now. Try again later.");
+      return;
+    }
+
+    sendMessage({ text: suggestion }, { body: { model: effectiveModel } });
+  };
+
+  const handleDeleteFromMessage = (messageId: string) => {
+    const index = messages.findIndex((message) => message.id === messageId);
+    if (index === -1) return;
+
+    setMessages(messages.slice(0, index));
   };
 
   const isSubmitDisabled =
-    !text.trim() || status === "streaming" || status === "submitted";
+    !effectiveModel ||
+    !hasCompatibleModels ||
+    !text.trim() ||
+    status === "streaming" ||
+    status === "submitted";
+
+  const attachmentsEnabled =
+    activeModelData?.architecture?.input_modalities?.some((x) => x !== "text") ??
+    false;
+
+  const showSuggestions = messages.length === 0 && text.length === 0;
   return (
     <div className="flex size-full flex-col divide-y overflow-hidden">
       <Conversation>
@@ -220,117 +283,34 @@ function InnerChat({
             messages={messages}
             status={status}
             regenerate={regenerate}
+            onDeleteMessage={handleDeleteFromMessage}
           />
-          {status === "submitted" && <Loader />}
+          <ConversationLoader isVisible={status === "submitted"} />
         </ConversationContent>
         <ConversationScrollButton />
       </Conversation>
-      <div className="grid shrink-0 gap-4 pt-4">
-        {!messages.length && (
-          <Suggestions className="px-4">
-            {suggestions.map((suggestion) => (
-              <Suggestion
-                key={suggestion}
-                onClick={() => handleSuggestionClick(suggestion)}
-                suggestion={suggestion}
-              />
-            ))}
-          </Suggestions>
-        )}
-        <div className="w-full px-4 pb-4">
-          <PromptInput globalDrop multiple onSubmit={handleSubmit}>
-            <PromptInputHeader className="p-0">
-              <PromptInputAttachments>
-                {(attachment) => <PromptInputAttachment data={attachment} />}
-              </PromptInputAttachments>
-            </PromptInputHeader>
-            <PromptInputBody>
-              <PromptInputTextarea
-                placeholder="Ask anything"
-                onChange={(event) => setText(event.target.value)}
-                value={text}
-              />
-            </PromptInputBody>
-            <PromptInputFooter>
-              <PromptInputTools>
-                {selectedModelData?.architecture.input_modalities.some(
-                  (x) => x !== "text",
-                ) && (
-                  <PromptInputActionMenu>
-                    <PromptInputActionMenuTrigger />
-                    <PromptInputActionMenuContent>
-                      <PromptInputActionAddAttachments />
-                    </PromptInputActionMenuContent>
-                  </PromptInputActionMenu>
-                )}
-                <ModelSelector
-                  onOpenChange={setModelSelectorOpen}
-                  open={modelSelectorOpen}
-                >
-                  <ModelSelectorTrigger asChild>
-                    <PromptInputButton>
-                      {selectedModelData?.id.split("/")[0] && (
-                        <ModelSelectorLogo
-                          provider={selectedModelData.id.split("/")[0]}
-                        />
-                      )}
-                      {selectedModelData?.name && (
-                        <ModelSelectorName>
-                          {selectedModelData.name}
-                        </ModelSelectorName>
-                      )}
-                    </PromptInputButton>
-                  </ModelSelectorTrigger>
-                  <ModelSelectorContent>
-                    <ModelSelectorInput placeholder="Search models..." />
-                    <ModelSelectorList>
-                      <ModelSelectorEmpty>No models found.</ModelSelectorEmpty>
-                      {chefs.map((chef) => (
-                        <ModelSelectorGroup key={chef} heading={chef}>
-                          {models
-                            .filter((m) => m.chef === chef)
-                            .map((m) => (
-                              <ModelSelectorItem
-                                key={m.id}
-                                onSelect={() => {
-                                  setModel(m.id);
-                                  setModelSelectorOpen(false);
-                                }}
-                                value={m.id}
-                              >
-                                <ModelSelectorLogo provider={m.chefSlug} />
-                                <ModelSelectorName>
-                                  {getDisplayModelName(m.chef, m.name)}
-                                </ModelSelectorName>
-                                {model === m.id && (
-                                  <CheckIcon className="ml-auto size-4" />
-                                )}
-                                <div className="flex flex-wrap items-center gap-2">
-                                  {m.architecture.input_modalities
-                                    .filter((x) => x !== "text")
-                                    .map((modality) => (
-                                      <Badge key={modality} variant="outline">
-                                        {modality}
-                                      </Badge>
-                                    ))}
-                                </div>
-                              </ModelSelectorItem>
-                            ))}
-                        </ModelSelectorGroup>
-                      ))}
-                    </ModelSelectorList>
-                  </ModelSelectorContent>
-                </ModelSelector>
-              </PromptInputTools>
-              <PromptInputSubmit
-                disabled={isSubmitDisabled}
-                className="rounded-full"
-                status={status}
-              />
-            </PromptInputFooter>
-          </PromptInput>
-        </div>
-      </div>
+      <ChatPrompt
+        activeModelData={activeModelData}
+        attachmentsEnabled={attachmentsEnabled}
+        chefs={chefs}
+        compatibilityByModel={compatibilityByModel}
+        effectiveModel={effectiveModel}
+        hasCompatibleModels={hasCompatibleModels}
+        hasModalRequirements={hasModalRequirements}
+        hasModels={hasModels}
+        isSubmitDisabled={isSubmitDisabled}
+        modelSelectorOpen={modelSelectorOpen}
+        models={models}
+        onModelSelect={setModel}
+        onSubmit={handleSubmit}
+        onSuggestionClick={handleSuggestionClick}
+        promptPlaceholder={promptPlaceholder}
+        setModelSelectorOpen={setModelSelectorOpen}
+        status={status}
+        text={text}
+        setText={setText}
+        showSuggestions={showSuggestions}
+      />
     </div>
   );
 }

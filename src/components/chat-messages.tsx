@@ -19,7 +19,7 @@ import {
   MessageAction,
   MessageActions,
 } from "@/components/ai-elements/message";
-import { CopyIcon, MessageSquare, RefreshCcwIcon } from "lucide-react";
+import { CopyIcon, MessageSquare, RefreshCcwIcon, TrashIcon } from "lucide-react";
 import { UIMessage, UseChatHelpers } from "@ai-sdk/react";
 import { cn, shikiThemes } from "@/lib/utils";
 import { ConversationEmptyState } from "./ai-elements/conversation";
@@ -28,10 +28,12 @@ export function ChatMessages({
   messages,
   regenerate,
   status,
+  onDeleteMessage,
 }: {
   messages: UIMessage[];
   regenerate: UseChatHelpers<UIMessage>["regenerate"];
   status: UseChatHelpers<UIMessage>["status"];
+  onDeleteMessage?: (messageId: string) => void;
 }) {
   return (
     <>
@@ -98,6 +100,17 @@ export function ChatMessages({
                           label="Copy"
                         >
                           <CopyIcon className="size-3" />
+                        </MessageAction>
+                      </MessageActions>
+                    )}
+                    {message.role === "user" && onDeleteMessage && (
+                      <MessageActions className="justify-end">
+                        <MessageAction
+                          onClick={() => onDeleteMessage(message.id)}
+                          label="Delete from here"
+                          tooltip="Delete this and later messages"
+                        >
+                          <TrashIcon className="size-3" />
                         </MessageAction>
                       </MessageActions>
                     )}
