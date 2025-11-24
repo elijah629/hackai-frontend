@@ -5,7 +5,7 @@ import { generateObject } from "ai";
 import { NextResponse } from "next/server";
 import z from "zod";
 
-export const maxDuration = 30;
+export const maxDuration = 15;
 
 export async function POST(req: Request) {
   const session = await getSession();

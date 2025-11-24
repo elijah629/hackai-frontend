@@ -10,7 +10,7 @@ import { BASE } from "@/lib/hackclub";
 import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 import system from "./system.md";
 
-export const maxDuration = 30;
+export const maxDuration = 300;
 
 export async function POST(req: Request) {
   const session = await getSession();
