@@ -7,6 +7,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
+import { Analytics } from "@vercel/analytics/next";
 
 const phantomSans = localFont({
   src: [
@@ -61,6 +62,7 @@ export default function RootLayout({
           </SidebarProvider>
           <Toaster />
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
