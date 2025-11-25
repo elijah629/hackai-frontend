@@ -132,7 +132,6 @@ export function ChatPrompt({
                       <PromptInputActionAddAttachments />
                     </PromptInputActionMenuContent>
                   </PromptInputActionMenu>
-                  <Separator orientation="vertical" />
                 </>
               )}
               <PromptInputButton
