@@ -7,6 +7,7 @@ import {
   PromptInputAttachment,
   PromptInputAttachments,
   PromptInputBody,
+  PromptInputButton,
   PromptInputFooter,
   PromptInputHeader,
   PromptInputMessage,
@@ -18,6 +19,8 @@ import { ChatModelSelector } from "./model-selector";
 import { Model } from "@/lib/hackclub";
 import { Suggestions, Suggestion } from "../ai-elements/suggestion";
 import { UIMessage, UseChatHelpers } from "@ai-sdk/react";
+import { GlobeIcon } from "lucide-react";
+import { Separator } from "../ui/separator";
 
 const suggestions = [
   "What are the latest trends in AI?",
@@ -45,28 +48,45 @@ type ChatPromptProps = {
   isSubmitDisabled: boolean;
   compatibilityByModel: Map<string, { missingInputs: string[] }>;
   status: UseChatHelpers<UIMessage>["status"];
+  useWebSearch: boolean;
+  setUseWebSearch: (useWebSearch: boolean) => void;
   attachmentsEnabled: boolean;
   showSuggestions: boolean;
+  stop: () => void;
 };
 
 export function ChatPrompt({
   text,
   setText,
+
+  stop,
+
   models,
   chefs,
   hasModels,
   hasCompatibleModels,
-  promptPlaceholder,
+
   activeModelData,
   effectiveModel,
+
+  promptPlaceholder,
+
   modelSelectorOpen,
+  useWebSearch,
+
   setModelSelectorOpen,
+  setUseWebSearch,
+
   onModelSelect,
   onSubmit,
   onSuggestionClick,
+
   isSubmitDisabled,
+
   compatibilityByModel,
+
   status,
+
   attachmentsEnabled,
   showSuggestions,
 }: ChatPromptProps) {
@@ -105,13 +125,23 @@ export function ChatPrompt({
           <PromptInputFooter>
             <PromptInputTools>
               {attachmentsEnabled && (
-                <PromptInputActionMenu>
-                  <PromptInputActionMenuTrigger />
-                  <PromptInputActionMenuContent>
-                    <PromptInputActionAddAttachments />
-                  </PromptInputActionMenuContent>
-                </PromptInputActionMenu>
+                <>
+                  <PromptInputActionMenu>
+                    <PromptInputActionMenuTrigger />
+                    <PromptInputActionMenuContent>
+                      <PromptInputActionAddAttachments />
+                    </PromptInputActionMenuContent>
+                  </PromptInputActionMenu>
+                  <Separator orientation="vertical" />
+                </>
               )}
+              <PromptInputButton
+                onClick={() => setUseWebSearch(!useWebSearch)}
+                variant={useWebSearch ? "default" : "ghost"}
+              >
+                <GlobeIcon size={16} />
+                <span>Search</span>
+              </PromptInputButton>
               <ChatModelSelector
                 activeModelData={activeModelData}
                 chefs={chefs}
@@ -126,6 +156,12 @@ export function ChatPrompt({
             </PromptInputTools>
             <PromptInputSubmit
               disabled={isSubmitDisabled}
+              onClick={(e) => {
+                if (status === "streaming") {
+                  e.preventDefault();
+                  stop();
+                }
+              }}
               className="rounded-full"
               status={status}
             />

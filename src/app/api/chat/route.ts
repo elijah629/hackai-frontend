@@ -6,38 +6,35 @@ import {
   smoothStream,
 } from "ai";
 import { NextResponse } from "next/server";
-import { BASE } from "@/lib/hackclub";
-import { createOpenRouter } from "@openrouter/ai-sdk-provider";
-import system from "./system.md";
+import { createHackclub } from "@/lib/hackclub";
+import { system } from "./system";
+import { plugins } from "./plugins";
 
 export const maxDuration = 300;
 
 export async function POST(req: Request) {
-  const session = await getSession();
+  const { apiKey } = await getSession();
 
-  if (!session.apiKey) {
+  if (!apiKey) {
     return new NextResponse("Unauthorized", { status: 401 });
   }
 
   const {
     messages,
     model,
+    webSearch,
   }: { messages: UIMessage[]; model: string; webSearch: boolean } =
     await req.json();
 
-  const provider = createOpenRouter({
-    baseURL: BASE,
-    apiKey: session.apiKey,
-    compatibility: "strict",
-  });
+  const provider = createHackclub({ apiKey });
 
   const result = streamText({
-    model: provider.chat(model),
+    model: provider.chat(model, {
+      plugins: plugins({ webSearch }),
+    }),
+    temperature: 0.3,
     messages: convertToModelMessages(messages),
-    system: system.replaceAll(
-      "{{current_date}}",
-      new Date().toLocaleDateString(),
-    ),
+    system: system({ webSearch }),
     experimental_transform: smoothStream(),
   });
 

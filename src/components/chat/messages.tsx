@@ -21,8 +21,9 @@ import {
 } from "@/components/ai-elements/message";
 import { CopyIcon, MessageSquare, RefreshCcwIcon, Trash2 } from "lucide-react";
 import { UIMessage, UseChatHelpers } from "@ai-sdk/react";
-import { cn, shikiThemes } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { ConversationEmptyState } from "@/components/ai-elements/conversation";
+import { streamdownConfig } from "@/lib/streamdown";
 
 export function ChatMessages({
   messages,
@@ -44,125 +45,128 @@ export function ChatMessages({
           description="Type a message below to begin chatting"
         />
       )}
-      {messages.map((message, messageIndex) => (
-        <div key={message.id}>
-          {message.role === "assistant" &&
-            message.parts.filter((part) => part.type === "source-url").length >
-              0 && (
+      {messages.map((message, messageIndex) => {
+        const sources = message.parts.filter(
+          (part) => part.type === "source-url",
+        );
+
+        return (
+          <div key={message.id}>
+            {message.role === "assistant" && sources.length > 0 && (
               <Sources>
-                <SourcesTrigger
-                  count={
-                    message.parts.filter((part) => part.type === "source-url")
-                      .length
-                  }
-                />
-                {message.parts
-                  .filter((part) => part.type === "source-url")
-                  .map((part, i) => (
-                    <SourcesContent key={`${message.id}-${i}`}>
-                      <Source
-                        key={`${message.id}-${i}`}
-                        href={part.url}
-                        title={part.url}
-                      />
-                    </SourcesContent>
-                  ))}
+                <SourcesTrigger count={sources.length} />
+                {sources.map((part, i) => (
+                  <SourcesContent key={`${message.id}-${i}`}>
+                    <Source
+                      key={`${message.id}-${i}`}
+                      href={part.url}
+                      title={part.url}
+                    />
+                  </SourcesContent>
+                ))}
               </Sources>
             )}
-          {message.parts.map((part, i) => {
-            switch (part.type) {
-              case "text":
-                return (
-                  <Message
-                    key={`${message.id}-${i}`}
-                    from={message.role}
-                    className="max-w-none "
-                  >
-                    <MessageContent>
-                      <MessageResponse shikiTheme={shikiThemes}>
-                        {part.text}
-                      </MessageResponse>
-                    </MessageContent>
-                    {message.role === "assistant" && (
-                      <MessageActions>
-                        {messageIndex === messages.length - 1 && (
+
+            {message.parts.map((part, i) => {
+              switch (part.type) {
+                case "text":
+                  return (
+                    <Message
+                      key={`${message.id}-${i}`}
+                      from={message.role}
+                      className="max-w-none"
+                    >
+                      <MessageContent className="max-w-full">
+                        <MessageResponse {...streamdownConfig}>
+                          {part.text}
+                        </MessageResponse>
+                      </MessageContent>
+                      {message.role === "assistant" && (
+                        <MessageActions>
+                          {messageIndex === messages.length - 1 && (
+                            <MessageAction
+                              onClick={() => regenerate()}
+                              label="Retry"
+                            >
+                              <RefreshCcwIcon className="size-3" />
+                            </MessageAction>
+                          )}
                           <MessageAction
-                            onClick={() => regenerate()}
-                            label="Retry"
+                            onClick={() =>
+                              navigator.clipboard.writeText(part.text)
+                            }
+                            label="Copy"
                           >
-                            <RefreshCcwIcon className="size-3" />
-                          </MessageAction>
-                        )}
-                        <MessageAction
-                          onClick={() =>
-                            navigator.clipboard.writeText(part.text)
-                          }
-                          label="Copy"
-                        >
-                          <CopyIcon className="size-3" />
-                        </MessageAction>
-                      </MessageActions>
-                    )}
-                    {message.role === "user" &&
-                      messageIndex !== 0 &&
-                      onDeleteMessage && (
-                        <MessageActions className="justify-end">
-                          <MessageAction
-                            onClick={() => onDeleteMessage(message.id)}
-                            label="Delete from here"
-                            tooltip="Delete this and all later messages"
-                          >
-                            <Trash2 className="size-3" />
+                            <CopyIcon className="size-3" />
                           </MessageAction>
                         </MessageActions>
                       )}
-                  </Message>
-                );
-              case "reasoning":
-                if (part.text === "[REDACTED]") {
+                      {message.role === "user" &&
+                        messageIndex !== 0 &&
+                        onDeleteMessage && (
+                          <MessageActions className="justify-end">
+                            <MessageAction
+                              onClick={() => onDeleteMessage(message.id)}
+                              label="Delete from here"
+                              tooltip="Delete this and all later messages"
+                            >
+                              <Trash2 className="size-3" />
+                            </MessageAction>
+                          </MessageActions>
+                        )}
+                    </Message>
+                  );
+                case "reasoning":
+                  const reasoning = part.text
+                    .replaceAll("[REDACTED]", "")
+                    .replaceAll("\\n", "\n")
+                    .trim();
+
+                  if (reasoning === "") {
+                    return;
+                  }
+
+                  return (
+                    <Reasoning
+                      key={`${message.id}-${i}`}
+                      className="w-full"
+                      isStreaming={
+                        status === "streaming" &&
+                        i === message.parts.length - 1 &&
+                        message.id === messages.at(-1)?.id
+                      }
+                    >
+                      <ReasoningTrigger />
+                      <ReasoningContent className="text-muted-foreground ml-6">
+                        {reasoning}
+                      </ReasoningContent>
+                    </Reasoning>
+                  );
+
+                default:
                   return;
-                }
-
-                return (
-                  <Reasoning
-                    key={`${message.id}-${i}`}
-                    className="w-full"
-                    isStreaming={
-                      status === "streaming" &&
-                      i === message.parts.length - 1 &&
-                      message.id === messages.at(-1)?.id
-                    }
-                  >
-                    <ReasoningTrigger />
-                    <ReasoningContent className="text-muted-foreground!">
-                      {part.text}
-                    </ReasoningContent>
-                  </Reasoning>
-                );
-
-              default:
-                return;
-            }
-          })}
-          <MessageAttachments
-            className={cn(message.role === "assistant" && "ml-0", "mt-2")}
-          >
-            {message.parts
-              .filter((part) => part.type === "file")
-              .map((part) => (
-                <MessageAttachment
-                  className={cn(
-                    message.role === "assistant" &&
-                      part.mediaType.startsWith("image/") &&
-                      "size-32 md:size-64",
-                  )}
-                  data={part}
-                  key={part.url}
-                />
-              ))}
-          </MessageAttachments>
-        </div>
-      ))}
+              }
+            })}
+            <MessageAttachments
+              className={cn(message.role === "assistant" && "ml-0", "mt-2")}
+            >
+              {message.parts
+                .filter((part) => part.type === "file")
+                .map((part) => (
+                  <MessageAttachment
+                    className={cn(
+                      message.role === "assistant" &&
+                        part.mediaType.startsWith("image/") &&
+                        "size-32 md:size-64",
+                    )}
+                    data={part}
+                    key={part.url}
+                  />
+                ))}
+            </MessageAttachments>
+          </div>
+        );
+      })}
     </>
   );
 }

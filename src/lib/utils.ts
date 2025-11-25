@@ -1,11 +1,5 @@
 import { clsx, type ClassValue } from "clsx";
-import { BundledTheme } from "shiki";
 import { twMerge } from "tailwind-merge";
-
-export const shikiThemes = ["catppuccin-latte", "catppuccin-mocha"] as [
-  BundledTheme,
-  BundledTheme,
-];
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));

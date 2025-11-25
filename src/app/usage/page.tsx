@@ -11,8 +11,8 @@ import {
 } from "@/components/ui/card";
 import { UsageCard } from "@/components/usage-card";
 import { ModelSelectorLogo } from "@/components/ai-elements/model-selector";
-import { MessageResponse } from "@/components/ai-elements/message";
 import { getDisplayModelName } from "@/lib/utils";
+import { ModelMarkdown } from "@/components/model-markdown";
 
 const contextFormatter = new Intl.NumberFormat("en", {
   notation: "compact",
@@ -30,8 +30,8 @@ export default async function Usage() {
   }
   const metrics = usageMetrics
     ? [
-        { name: "Input Tokens", value: usageMetrics.totalPromptTokens },
-        { name: "Output Tokens", value: usageMetrics.totalCompletionTokens },
+        { name: "Input Tokens", value: usageMetrics.totalCompletionTokens }, // backwards? the api is odd and fliped them
+        { name: "Output Tokens", value: usageMetrics.totalPromptTokens },
         { name: "Total Tokens", value: usageMetrics.totalTokens },
         { name: "Requests", value: usageMetrics.totalRequests },
       ]
@@ -115,9 +115,9 @@ export default async function Usage() {
                       </CardHeader>
 
                       <CardContent className="ml-8">
-                        <MessageResponse className="text-xs leading-snug text-muted-foreground">
+                        <ModelMarkdown>
                           {m.description.replaceAll("\\n", "\n")}
-                        </MessageResponse>
+                        </ModelMarkdown>
                       </CardContent>
                       <CardFooter className="flex-col items-start ml-8 text-xs text-muted-foreground gap-2">
                         <div className="flex flex-wrap items-center gap-2">
@@ -139,7 +139,7 @@ export default async function Usage() {
 
                         <div className="flex items-center gap-2">
                           <span className="font-bold">Model ID:</span>
-                          <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm">
+                          <code className="rounded bg-muted px-1.5 py-0.5 font-mono">
                             {m.id}
                           </code>
                         </div>

@@ -1,3 +1,9 @@
+import {
+  createOpenRouter,
+  OpenRouterProvider,
+  OpenRouterProviderSettings,
+} from "@openrouter/ai-sdk-provider";
+
 export const BASE = "https://ai.hackclub.com/proxy/v1";
 
 export interface UsageMetrics {
@@ -71,4 +77,17 @@ export async function getModelList() {
   }));
 
   return models;
+}
+
+export function createHackclub(
+  options?: OpenRouterProviderSettings,
+): OpenRouterProvider {
+  return createOpenRouter({
+    baseURL: BASE,
+    compatibility: "strict",
+    headers: {
+      "X-Title": "hackai-frontend",
+    },
+    ...options,
+  });
 }

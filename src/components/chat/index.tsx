@@ -12,7 +12,7 @@ import {
   useRequiredModalities,
 } from "@/hooks/use-chat-compatibility";
 import { Loader } from "@/components/ai-elements/loader";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Model } from "@/lib/hackclub";
 import { useChat } from "@ai-sdk/react";
 import { ChatRow, db } from "@/lib/chat-store";
@@ -58,9 +58,10 @@ function InnerChat({
   );
   const [text, setText] = useState(storedChat?.input ?? "");
   const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+  const [useWebSearch, setUseWebSearch] = useState(false);
   const [hadStoredChat, setHadStoredChat] = useState(!!storedChat);
 
-  const { messages, sendMessage, status, regenerate, id, setMessages } =
+  const { messages, sendMessage, status, regenerate, id, setMessages, stop } =
     useChat({
       id: chatId,
       messages: storedChat?.messages ?? [],
@@ -69,6 +70,11 @@ function InnerChat({
         toast.error(e.message);
       },
     });
+  const lastSavedRef = useRef<{
+    messages: typeof messages;
+    text: string;
+    effectiveModel: string | undefined;
+  } | null>(null);
 
   useEffect(() => {
     if (storedChat) {
@@ -87,22 +93,36 @@ function InnerChat({
   const selectedModelData = models.find((m) => m.id === model);
   const effectiveModel = selectedModelData?.id ?? firstCompatibleModelId;
 
-  // Sync messages/model/etc. -> Dexie
   useEffect(() => {
     if (messages.length === 0) return;
 
-    // If this chat used to exist but was deleted from Dexie,
-    // don't recreate it just because messages are still in memory.
     if (!storedChat && hadStoredChat) {
       router.replace(`/c/${nanoid()}`);
+      return;
+    }
+    const effective = effectiveModel ?? model;
+
+    const prev = lastSavedRef.current;
+    if (
+      prev &&
+      prev.messages === messages &&
+      prev.text === text &&
+      prev.effectiveModel === effective
+    ) {
       return;
     }
 
     const now = Date.now();
 
-    const chatRow: ChatRow = {
+    lastSavedRef.current = {
+      messages,
+      text,
+      effectiveModel: effective,
+    };
+
+    db.chats.put({
       id,
-      lastModel: effectiveModel ?? model,
+      lastModel: effective,
       messages,
       input: text,
       title: storedChat?.title ?? "New Chat",
@@ -112,9 +132,7 @@ function InnerChat({
         storedChat?.messages.length !== messages.length
           ? now
           : storedChat?.updatedAt,
-    };
-
-    db.chats.put(chatRow);
+    });
   }, [
     messages,
     text,
@@ -127,29 +145,12 @@ function InnerChat({
     effectiveModel,
   ]);
 
-  // Title + emoji generation for *new* chats only
   useEffect(() => {
     if (messages.length !== 1) return;
     if (messages[0].role !== "user") return;
     if (storedChat?.title || storedChat?.icon) return;
 
     if (!storedChat && hadStoredChat) return;
-
-    const now = Date.now();
-
-    const chatRow: ChatRow = {
-      id,
-      lastModel: effectiveModel ?? model,
-      messages,
-      input: text,
-      title: storedChat?.title ?? "New Chat",
-      icon: storedChat?.icon ?? "💬",
-      createdAt: storedChat?.createdAt ?? now,
-      updatedAt:
-        storedChat?.messages.length !== messages.length
-          ? now
-          : storedChat?.updatedAt,
-    };
 
     (async () => {
       const { title, emoji } = await fetch("/api/chat-title", {
@@ -160,7 +161,7 @@ function InnerChat({
         }),
       }).then((x) => x.json());
 
-      db.chats.put({ ...chatRow, title, icon: emoji });
+      db.chats.update(id, { title, icon: emoji });
     })();
   }, [
     messages,
@@ -196,6 +197,11 @@ function InnerChat({
     : hasModels
       ? "No compatible models for this conversation"
       : "Add a model to start chatting";
+
+  const requestBody = {
+    model: effectiveModel,
+    webSearch: useWebSearch,
+  };
 
   const handleSubmit = (message: PromptInputMessage) => {
     const hasText = Boolean(message.text?.trim());
@@ -242,9 +248,7 @@ function InnerChat({
         files: message.files,
       },
       {
-        body: {
-          model: effectiveModel,
-        },
+        body: requestBody,
       },
     );
   };
@@ -268,8 +272,7 @@ function InnerChat({
   const isSubmitDisabled =
     !effectiveModel ||
     !hasCompatibleModels ||
-    !text.trim() ||
-    status === "streaming" ||
+    (status !== "streaming" && !text.trim()) ||
     status === "submitted";
 
   const attachmentsEnabled =
@@ -286,7 +289,7 @@ function InnerChat({
           <ChatMessages
             messages={messages}
             status={status}
-            regenerate={regenerate}
+            regenerate={() => regenerate({ body: requestBody })}
             onDeleteMessage={handleDeleteFromMessage}
           />
           {status === "submitted" && <Loader />}
@@ -294,6 +297,9 @@ function InnerChat({
         <ConversationScrollButton />
       </Conversation>
       <ChatPrompt
+        stop={stop}
+        useWebSearch={useWebSearch}
+        setUseWebSearch={setUseWebSearch}
         activeModelData={activeModelData}
         attachmentsEnabled={attachmentsEnabled}
         chefs={chefs}

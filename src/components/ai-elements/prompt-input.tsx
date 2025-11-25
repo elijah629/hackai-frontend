@@ -879,13 +879,9 @@ export const PromptInputTextarea = ({
   const handleChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.currentTarget.value;
 
-    // Update controller if present
     if (controller) {
       controller.textInput.setInput(value);
     }
-
-    // Resize after value change
-    resizeTextarea();
 
     onChange?.(e);
   };
@@ -901,12 +897,7 @@ export const PromptInputTextarea = ({
 
   useLayoutEffect(() => {
     resizeTextarea();
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!controller) return;
-    resizeTextarea();
-  }, [controller?.textInput.value]);
+  });
 
   return (
     <div className="w-full">

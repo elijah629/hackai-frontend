@@ -12,19 +12,23 @@ import { Analytics } from "@vercel/analytics/next";
 const phantomSans = localFont({
   src: [
     {
-      path: "../fonts/Italic.woff",
+      path: "../fonts/Italic.woff2",
       style: "italic",
+      weight: "normal",
     },
     {
-      path: "../fonts/Bold.woff",
-      style: "bold",
-    },
-    {
-      path: "../fonts/Regular.woff",
+      path: "../fonts/Bold.woff2",
       style: "normal",
+      weight: "bold",
+    },
+    {
+      path: "../fonts/Regular.woff2",
+      style: "normal",
+      weight: "normal",
     },
   ],
   variable: "--font-phantom-sans",
+  display: "swap",
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -55,7 +59,7 @@ export default function RootLayout({
         >
           <SidebarProvider>
             <AppSidebar />
-            <SidebarInset className="h-screen">
+            <SidebarInset className="h-screen min-w-0">
               <Header />
               {children}
             </SidebarInset>
