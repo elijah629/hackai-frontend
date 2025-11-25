@@ -1,6 +1,6 @@
 "use client";
 
-import { Streamdown } from "../../streamdown/packages/streamdown";
+import { Streamdown } from "streamdown";
 
 export function ModelMarkdown({ children }: { children: string | undefined }) {
   return (
