@@ -4,11 +4,21 @@ import { Message } from "@/components/ai-elements/message";
 import { UIMessage } from "ai";
 import { DBMessagePart, DBMessagePartSelect } from "@/lib/db/schema/chat";
 
-type Metadata = {};
+export type MessageMetadata = {
+  usage?: {
+    promptTokens: number;
+    promptTokensDetails: { cachedTokens: number };
+    completionTokens: number;
+    completionTokensDetails: { reasoningTokens: number };
+    cost: number;
+    totalTokens: number;
+  };
+};
+
 type DataPart = {};
 type Tools = {};
 
-export type Message = UIMessage<Metadata, DataPart, Tools>;
+export type Message = UIMessage<MessageMetadata, DataPart, Tools>;
 export type MessagePart = Message["parts"][0];
 
 export const mapUIMessagePartsToDBParts = (

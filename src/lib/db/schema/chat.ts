@@ -13,7 +13,7 @@ import {
 import { user } from "./auth";
 import { generateId, ProviderMetadata } from "ai";
 import { generateChatId } from "@/lib/chat";
-import { Message } from "@/types/message";
+import { Message, MessageMetadata } from "@/types/message";
 
 export const chats = pgTable(
   "chats",
@@ -51,6 +51,7 @@ export const messages = pgTable(
       .references(() => chats.id, { onDelete: "cascade" })
       .notNull(),
     role: text("role").$type<Message["role"]>().notNull(),
+    metadata: jsonb().$type<MessageMetadata>(),
     createdAt: timestamp().defaultNow().notNull(),
   },
   (table) => [index("messages_chat_id_idx").on(table.chatId)],

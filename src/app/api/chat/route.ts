@@ -3,16 +3,19 @@ import {
   convertToModelMessages,
   validateUIMessages,
   generateId,
-  generateObject,
 } from "ai";
 import { NextResponse } from "next/server";
 import { createHackclub } from "@/lib/hackclub";
 import { system } from "./system";
 import { plugins } from "./plugins";
 import { auth } from "@/lib/auth";
-import { deleteMessage, loadChat, upsertMessage } from "@/lib/db/actions";
-import { Message } from "@/types/message";
-import z from "zod";
+import {
+  deleteMessage,
+  loadChat,
+  setLastModel,
+  upsertMessage,
+} from "@/lib/db/actions";
+import { Message, MessageMetadata } from "@/types/message";
 
 export const maxDuration = 300;
 
@@ -43,8 +46,6 @@ export async function POST(req: Request) {
 
   switch (chat.type) {
     case "chat":
-      console.log(webSearch);
-
       const toSendMessages = [...chat.chat.messages];
 
       if (regenerate) {
@@ -57,6 +58,7 @@ export async function POST(req: Request) {
         }
       } else {
         await upsertMessage({ chatId, id: message.id, message });
+        await setLastModel(chatId, model);
 
         toSendMessages.push(message);
       }
@@ -67,6 +69,7 @@ export async function POST(req: Request) {
 
       const provider = createHackclub({
         apiKey,
+
         fetch: async (input, init) => {
           const f = await fetch(input, init);
 
@@ -83,6 +86,9 @@ export async function POST(req: Request) {
       const result = streamText({
         model: provider.chat(model, {
           plugins: plugins({ webSearch }),
+          usage: {
+            include: true,
+          },
         }),
         // TODO: allow temp control, etc
         temperature: 0.4,
@@ -99,6 +105,15 @@ export async function POST(req: Request) {
         sendSources: true,
         sendReasoning: true,
         generateMessageId: () => generateId(),
+        messageMetadata: ({ part }) => {
+          if (part.type === "finish-step") {
+            return {
+              usage: part.providerMetadata?.openrouter.usage,
+            } as MessageMetadata;
+          }
+
+          return {};
+        },
         onFinish: async ({ responseMessage }) => {
           await upsertMessage({
             chatId,
@@ -115,38 +130,4 @@ export async function POST(req: Request) {
     case "not-found":
       return new NextResponse("Not found", { status: 404 });
   }
-}
-
-async function generateTitle({
-  apiKey,
-  prompt,
-}: {
-  apiKey: string;
-  prompt: string;
-}): Promise<{
-  emoji: string;
-  title: string;
-}> {
-  const provider = createHackclub({ apiKey });
-
-  const {
-    object: { title, emoji },
-  } = await generateObject({
-    model: provider.chat("google/gemini-2.5-flash"),
-    schema: z.object({
-      title: z.string(),
-      emoji: z.string(),
-    }),
-    system: `Given the user’s query, generate an object of the form \`{ title: string; emoji: string }\`.
-* \`title\` must be a concise noun phrase under 8 words (ideally ~3).
-* \`emoji\` must be exactly one emoji character.
-- Return only the object, with no extra text.
-
-Example:
-- Input: How do I bake a cake?
-- Output: { title: "Cake baking", emoji: "🎂" }`,
-    prompt: `The user's query is: \`\`\`${prompt}\`\`\``,
-  });
-
-  return { title, emoji };
 }

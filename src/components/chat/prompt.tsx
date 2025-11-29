@@ -32,6 +32,7 @@ import {
   ContextReasoningUsage,
   ContextTrigger,
 } from "@/components/ai-elements/context";
+import { MessageMetadata } from "@/types/message";
 
 const suggestions = [
   "What are the latest trends in AI?",
@@ -65,6 +66,8 @@ export function ChatPrompt({
 
   attachmentsEnabled,
   showSuggestions,
+
+  usageData,
 }: {
   text: string;
   setText: (text: string) => void;
@@ -89,6 +92,8 @@ export function ChatPrompt({
 
   attachmentsEnabled: boolean;
   showSuggestions: boolean;
+
+  usageData: NonNullable<MessageMetadata["usage"]>;
 }) {
   return (
     <div className="grid shrink-0 gap-4 pt-4">
@@ -136,15 +141,16 @@ export function ChatPrompt({
               />
               <Context
                 maxTokens={modelData.context_length}
-                modelId={modelData.id.replace("/", ":")}
+                totalCostUSD={usageData.cost}
                 usage={{
-                  inputTokens: 0,
-                  outputTokens: 0,
-                  totalTokens: 0,
-                  cachedInputTokens: 0,
-                  reasoningTokens: 0,
+                  inputTokens: usageData.promptTokens,
+                  outputTokens: usageData.completionTokens,
+                  totalTokens: usageData.totalTokens,
+                  cachedInputTokens: usageData.promptTokensDetails.cachedTokens,
+                  reasoningTokens:
+                    usageData.completionTokensDetails.reasoningTokens,
                 }}
-                usedTokens={0}
+                usedTokens={usageData.promptTokens + usageData.completionTokens}
               >
                 <ContextTrigger />
                 <ContextContent>

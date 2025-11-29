@@ -68,6 +68,10 @@ export async function createChat() {
   redirect(`/c/${id}`);
 }
 
+export async function setLastModel(chatId: string, lastModel: string) {
+  await db.update(chats).set({ lastModel }).where(eq(chats.id, chatId));
+}
+
 export async function deleteChat(chatId: string) {
   const [deletedChat] = await db
     .delete(chats)
@@ -147,6 +151,7 @@ export async function upsertMessage({
       .values({
         chatId,
         role: message.role,
+        metadata: message.metadata,
         id,
       })
       .onConflictDoUpdate({
@@ -219,6 +224,7 @@ export async function loadChat(
       messages: chat.messages.map((message) => ({
         id: message.id,
         role: message.role,
+        metadata: message.metadata ?? undefined,
         parts: message.parts.map((part) => mapDBPartToUIMessagePart(part)),
       })),
       isPublic: chat.isPublic,
