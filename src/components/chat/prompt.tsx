@@ -20,6 +20,18 @@ import { Model } from "@/lib/hackclub";
 import { Suggestions, Suggestion } from "../ai-elements/suggestion";
 import { UIMessage, UseChatHelpers } from "@ai-sdk/react";
 import { GlobeIcon } from "lucide-react";
+import {
+  Context,
+  ContextCacheUsage,
+  ContextContent,
+  ContextContentBody,
+  ContextContentFooter,
+  ContextContentHeader,
+  ContextInputUsage,
+  ContextOutputUsage,
+  ContextReasoningUsage,
+  ContextTrigger,
+} from "@/components/ai-elements/context";
 
 const suggestions = [
   "What are the latest trends in AI?",
@@ -122,6 +134,30 @@ export function ChatPrompt({
                 models={models}
                 onSelect={onModelSelect}
               />
+              <Context
+                maxTokens={modelData.context_length}
+                modelId={modelData.id.replace("/", ":")}
+                usage={{
+                  inputTokens: 0,
+                  outputTokens: 0,
+                  totalTokens: 0,
+                  cachedInputTokens: 0,
+                  reasoningTokens: 0,
+                }}
+                usedTokens={0}
+              >
+                <ContextTrigger />
+                <ContextContent>
+                  <ContextContentHeader />
+                  <ContextContentBody>
+                    <ContextInputUsage />
+                    <ContextOutputUsage />
+                    <ContextReasoningUsage />
+                    <ContextCacheUsage />
+                  </ContextContentBody>
+                  <ContextContentFooter />
+                </ContextContent>
+              </Context>
             </PromptInputTools>
             <PromptInputSubmit
               disabled={isSubmitDisabled}

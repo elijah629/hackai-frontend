@@ -48,7 +48,7 @@ export async function createChat() {
     const { url } = await auth.api.signInWithOAuth2({
       body: {
         providerId: "hackclub",
-        callbackURL: "/new",
+        callbackURL: "/",
       },
       headers: h,
     });
