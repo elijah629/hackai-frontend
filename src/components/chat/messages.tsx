@@ -32,7 +32,7 @@ export function ChatMessages({
   onDeleteMessage,
 }: {
   messages: UIMessage[];
-  regenerate: UseChatHelpers<UIMessage>["regenerate"];
+  regenerate: () => void;
   status: UseChatHelpers<UIMessage>["status"];
   onDeleteMessage?: (messageId: string) => void;
 }) {
@@ -85,9 +85,7 @@ export function ChatMessages({
                         <MessageActions>
                           {messageIndex === messages.length - 1 && (
                             <MessageAction
-                              onClick={() =>
-                                regenerate({ body: { regenerate: true } })
-                              }
+                              onClick={() => regenerate()}
                               label="Retry"
                             >
                               <RefreshCcwIcon className="size-3" />

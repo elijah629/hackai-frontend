@@ -51,8 +51,6 @@ export function Chat({
             body: {
               id,
               message: lastMessage,
-              model,
-              webSearch,
               ...body,
             },
           };
@@ -88,10 +86,18 @@ export function Chat({
       })();
     }
 
-    sendMessage({
-      text: message.text || "Sent with attachments",
-      files: message.files,
-    });
+    sendMessage(
+      {
+        text: message.text || "Sent with attachments",
+        files: message.files,
+      },
+      {
+        body: {
+          model,
+          webSearch,
+        },
+      },
+    );
   };
 
   const handleSuggestionClick = (suggestion: string) => {
@@ -122,7 +128,9 @@ export function Chat({
           <ChatMessages
             messages={messages}
             status={status}
-            regenerate={regenerate}
+            regenerate={() =>
+              regenerate({ body: { regenerate: true, model, webSearch } })
+            }
             onDeleteMessage={handleDeleteFromMessage}
           />
           {status === "submitted" && (

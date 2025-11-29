@@ -13,10 +13,6 @@ import { auth } from "@/lib/auth";
 import { deleteMessage, loadChat, upsertMessage } from "@/lib/db/actions";
 import { Message } from "@/types/message";
 import z from "zod";
-import { revalidatePath, revalidateTag } from "next/cache";
-import { chats } from "@/lib/db/schema/chat";
-import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
 
 export const maxDuration = 300;
 
@@ -47,6 +43,8 @@ export async function POST(req: Request) {
 
   switch (chat.type) {
     case "chat":
+      console.log(webSearch);
+
       const toSendMessages = [...chat.chat.messages];
 
       if (regenerate) {
