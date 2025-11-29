@@ -53,8 +53,6 @@
   --text-sm: 1rem;
   --text-sm--line-height: calc(1.25 / 1.04);
 
-  --primary: var(--red);
-
   --rosewater: hsl(11deg, 59%, 67%);
   --flamingo: hsl(0deg, 60%, 67%);
   --pink: hsl(316deg, 73%, 69%);
@@ -190,4 +188,9 @@ html.dark pre[data-streamdown="code-block"] span {
   font-style: var(--shiki-dark-font-style) !important;
   font-weight: var(--shiki-dark-font-weight) !important;
   text-decoration: var(--shiki-dark-text-decoration) !important;
+}
+
+::selection {
+  background: var(--primary);
+  color: var(--primary-foreground);
 }

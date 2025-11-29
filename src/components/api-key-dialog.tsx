@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -12,17 +14,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import Link from "next/link";
 import Form from "next/form";
-import { setApiKey } from "@/app/actions";
+import { setApiKey } from "@/lib/db/actions";
+import { ReactNode } from "react";
 
 export function ApiKeyDialog({
   open,
   onOpenChange,
+  children,
 }: {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  children?: ReactNode;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
+      {children}
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>API Key</DialogTitle>

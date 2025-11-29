@@ -3,6 +3,7 @@ import {
   OpenRouterProvider,
   OpenRouterProviderSettings,
 } from "@openrouter/ai-sdk-provider";
+import { NextResponse } from "next/server";
 
 export const BASE = "https://ai.hackclub.com/proxy/v1";
 
@@ -33,7 +34,7 @@ export interface RawModel {
   architecture: ModelArchitecture;
 }
 
-export async function isValidApiKey(apiKey: string): Promise<boolean> {
+/*export async function isValidApiKey(apiKey: string): Promise<boolean> {
   try {
     const res = await fetch(BASE + "/stats", {
       headers: {
@@ -53,14 +54,20 @@ export async function isValidApiKey(apiKey: string): Promise<boolean> {
   } catch (err) {
     throw err;
   }
-}
+}*/
 
-export async function getUsageMetrics(apiKey: string) {
-  return (await fetch(BASE + "/stats", {
+export async function getUsageMetrics(apiKey: string): Promise<UsageMetrics> {
+  const body = await fetch(BASE + "/stats", {
     headers: {
       Authorization: "Bearer " + apiKey,
     },
-  }).then((x) => x.json())) as UsageMetrics;
+  }).then((x) => x.text());
+
+  try {
+    return JSON.parse(body);
+  } catch {
+    throw new Error("API Error: " + body);
+  }
 }
 
 export async function getModelList() {

@@ -20,7 +20,6 @@ import { Model } from "@/lib/hackclub";
 import { Suggestions, Suggestion } from "../ai-elements/suggestion";
 import { UIMessage, UseChatHelpers } from "@ai-sdk/react";
 import { GlobeIcon } from "lucide-react";
-import { Separator } from "../ui/separator";
 
 const suggestions = [
   "What are the latest trends in AI?",
@@ -30,31 +29,6 @@ const suggestions = [
   "What is the difference between SQL and NoSQL?",
 ];
 
-type ChatPromptProps = {
-  text: string;
-  setText: (text: string) => void;
-  models: Model[];
-  chefs: string[];
-  hasModels: boolean;
-  hasCompatibleModels: boolean;
-  promptPlaceholder: string;
-  activeModelData?: Model;
-  effectiveModel?: string;
-  modelSelectorOpen: boolean;
-  setModelSelectorOpen: (open: boolean) => void;
-  onModelSelect: (modelId: string) => void;
-  onSubmit: (message: PromptInputMessage) => void;
-  onSuggestionClick: (suggestion: string) => void;
-  isSubmitDisabled: boolean;
-  compatibilityByModel: Map<string, { missingInputs: string[] }>;
-  status: UseChatHelpers<UIMessage>["status"];
-  useWebSearch: boolean;
-  setUseWebSearch: (useWebSearch: boolean) => void;
-  attachmentsEnabled: boolean;
-  showSuggestions: boolean;
-  stop: () => void;
-};
-
 export function ChatPrompt({
   text,
   setText,
@@ -62,19 +36,11 @@ export function ChatPrompt({
   stop,
 
   models,
-  chefs,
-  hasModels,
-  hasCompatibleModels,
-
-  activeModelData,
-  effectiveModel,
+  modelData,
 
   promptPlaceholder,
 
-  modelSelectorOpen,
   useWebSearch,
-
-  setModelSelectorOpen,
   setUseWebSearch,
 
   onModelSelect,
@@ -83,30 +49,41 @@ export function ChatPrompt({
 
   isSubmitDisabled,
 
-  compatibilityByModel,
-
   status,
 
   attachmentsEnabled,
   showSuggestions,
-}: ChatPromptProps) {
+}: {
+  text: string;
+  setText: (text: string) => void;
+
+  stop: () => void;
+
+  models: Model[];
+  modelData: Model;
+
+  promptPlaceholder: string;
+
+  useWebSearch: boolean;
+  setUseWebSearch: (useWebSearch: boolean) => void;
+
+  onModelSelect: (modelId: string) => void;
+  onSubmit: (message: PromptInputMessage) => void;
+  onSuggestionClick: (suggestion: string) => void;
+
+  isSubmitDisabled: boolean;
+
+  status: UseChatHelpers<UIMessage>["status"];
+
+  attachmentsEnabled: boolean;
+  showSuggestions: boolean;
+}) {
   return (
     <div className="grid shrink-0 gap-4 pt-4">
       <PromptSuggestions
         onSuggestionClick={onSuggestionClick}
         shouldRender={showSuggestions}
       />
-      {!hasModels && (
-        <p className="px-4 text-sm text-muted-foreground">
-          No models available. Add one to start chatting.
-        </p>
-      )}
-      {!hasCompatibleModels && hasModels && (
-        <p className="px-4 text-sm text-muted-foreground">
-          No compatible models for the current conversation. Remove unsupported
-          inputs or start a new chat.
-        </p>
-      )}
       <div className="w-full px-4 pb-4">
         <PromptInput globalDrop multiple onSubmit={onSubmit}>
           <PromptInputHeader className="p-0">
@@ -119,7 +96,6 @@ export function ChatPrompt({
               placeholder={promptPlaceholder}
               onChange={(event) => setText(event.target.value)}
               value={text}
-              disabled={!hasCompatibleModels}
             />
           </PromptInputBody>
           <PromptInputFooter>
@@ -142,15 +118,9 @@ export function ChatPrompt({
                 <span>Search</span>
               </PromptInputButton>
               <ChatModelSelector
-                activeModelData={activeModelData}
-                chefs={chefs}
-                compatibilityByModel={compatibilityByModel}
-                effectiveModel={effectiveModel}
-                hasModels={hasModels}
-                modelSelectorOpen={modelSelectorOpen}
+                modelData={modelData}
                 models={models}
                 onSelect={onModelSelect}
-                setModelSelectorOpen={setModelSelectorOpen}
               />
             </PromptInputTools>
             <PromptInputSubmit

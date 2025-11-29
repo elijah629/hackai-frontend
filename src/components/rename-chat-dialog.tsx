@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -9,24 +11,23 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { db } from "@/lib/chat-store";
 
 import Form from "next/form";
 import { useState } from "react";
 import { EmojiPickerIcon } from "./emoji-picker-icon";
 
 export function RenameChatDialog({
-  id,
   name,
   icon,
   open,
   onOpenChange,
+  onRename,
 }: {
-  id: string;
   name: string;
   icon: string;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  onRename?: (icon: string, name: string) => void;
 }) {
   const [emoji, setEmoji] = useState(icon);
 
@@ -38,10 +39,7 @@ export function RenameChatDialog({
         </DialogHeader>
         <Form
           action={(e) => {
-            db.chats.update(id, {
-              title: e.get("name") as string,
-              icon: emoji,
-            });
+            onRename?.(emoji, e.get("name") as string);
             onOpenChange?.(false);
           }}
         >

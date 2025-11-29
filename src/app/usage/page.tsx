@@ -1,43 +1,14 @@
-import { getSession } from "../actions";
-import { getModelList, getUsageMetrics, UsageMetrics } from "@/lib/hackclub";
+import { Models, ModelsSkeleton } from "@/components/models";
+import { Button } from "@/components/ui/button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Usage } from "@/components/usage";
+import { ExternalLink } from "lucide-react";
+import Link from "next/link";
+import { Suspense } from "react";
 
-import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardContent,
-  CardFooter,
-} from "@/components/ui/card";
-import { UsageCard } from "@/components/usage-card";
-import { ModelSelectorLogo } from "@/components/ai-elements/model-selector";
-import { getDisplayModelName } from "@/lib/utils";
-import { ModelMarkdown } from "@/components/model-markdown";
-
-const contextFormatter = new Intl.NumberFormat("en", {
-  notation: "compact",
-  compactDisplay: "short",
-});
-
-export default async function Usage() {
-  const models = await getModelList();
-  const chefs: string[] = Array.from(new Set(models.map((x) => x.chef))).sort();
-  const session = await getSession();
-  let usageMetrics: UsageMetrics | null = null;
-  const loggedIn = session.apiKey !== undefined;
-  if (session.apiKey !== undefined) {
-    usageMetrics = await getUsageMetrics(session.apiKey);
-  }
-  const metrics = usageMetrics
-    ? [
-        { name: "Input Tokens", value: usageMetrics.totalCompletionTokens }, // backwards? the api is odd and fliped them
-        { name: "Output Tokens", value: usageMetrics.totalPromptTokens },
-        { name: "Total Tokens", value: usageMetrics.totalTokens },
-        { name: "Requests", value: usageMetrics.totalRequests },
-      ]
-    : [];
+export default async function UsageModelPage() {
   return (
-    <section>
+    <main>
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-10">
         <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div>
@@ -49,108 +20,33 @@ export default async function Usage() {
               all requests, tokens, and API keys.
             </p>
           </div>
+          <Button variant="outline" asChild>
+            <Link href="https://ai.hackclub.com/dashboard" target="_blank">
+              <ExternalLink />
+              Extended metrics
+            </Link>
+          </Button>
         </div>
-        {!loggedIn && (
-          <Card className="items-center justify-center">
-            <p>You must be logged in to view usage metrics.</p>
-          </Card>
-        )}
-        {loggedIn && (
-          <Card>
-            <CardHeader className="flex items-center justify-between gap-4">
-              <CardTitle>Usage summary</CardTitle>
-              <Badge variant="secondary">All API keys</Badge>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              {metrics.map(({ name, value }) => (
-                <UsageCard key={name} name={name} value={value} />
-              ))}
-            </CardContent>
-            <CardFooter className="text-xs leading-relaxed text-muted-foreground">
-              Token counts are based on requests made with every API key. For
-              more in depth request metrics, open the extended metrics
-              dashboard.
-            </CardFooter>
-          </Card>
-        )}
+        <Suspense fallback={<Skeleton className="rounded-xl py-6" />}>
+          <Usage />
+        </Suspense>
       </div>
       <div className="mx-auto flex max-w-6xl flex-col gap-8 px-5 py-10">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div>
-            <h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">
-              Models
-            </h1>
-            <p className="mt-3 max-w-xl text-sm text-muted-foreground md:text-base">
-              Full list of currently allowed completion models
-            </p>
-          </div>
+        <div>
+          <h1 className="mt-2 text-4xl font-black tracking-tight md:text-5xl">
+            Models
+          </h1>
+          <p className="mt-3 max-w-xl text-sm text-muted-foreground md:text-base">
+            Full list of currently allowed completion models
+          </p>
         </div>
 
         <div className="space-y-8">
-          {chefs.map((chef) => (
-            <section key={chef} className="space-y-4">
-              <header className="flex items-center justify-between gap-2">
-                <h2 className="text-lg font-semibold tracking-tight md:text-xl">
-                  {chef}
-                </h2>
-              </header>
-
-              <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-2">
-                {models
-                  .filter((m) => m.chef === chef)
-                  .map((m) => (
-                    <Card key={m.id}>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2 text-sm font-semibold  leading-tight">
-                          <ModelSelectorLogo
-                            className="size-6"
-                            provider={m.chefSlug}
-                          />
-                          {getDisplayModelName(m.chef, m.name)}
-                        </CardTitle>
-                        <Badge variant="secondary" className="ml-8">
-                          {contextFormatter.format(m.context_length)} context
-                          window
-                        </Badge>
-                      </CardHeader>
-
-                      <CardContent className="ml-8">
-                        <ModelMarkdown>
-                          {m.description.replaceAll("\\n", "\n")}
-                        </ModelMarkdown>
-                      </CardContent>
-                      <CardFooter className="flex-col items-start ml-8 text-xs text-muted-foreground gap-2">
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-bold">Input:</span>
-                          {m.architecture.input_modalities.map((modality) => (
-                            <Badge key={modality} variant="outline">
-                              {modality}
-                            </Badge>
-                          ))}
-                        </div>
-                        <div className="flex flex-wrap items-center gap-2">
-                          <span className="font-bold">Output:</span>
-                          {m.architecture.output_modalities.map((modality) => (
-                            <Badge key={modality} variant="outline">
-                              {modality}
-                            </Badge>
-                          ))}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                          <span className="font-bold">Model ID:</span>
-                          <code className="rounded bg-muted px-1.5 py-0.5 font-mono">
-                            {m.id}
-                          </code>
-                        </div>
-                      </CardFooter>
-                    </Card>
-                  ))}
-              </div>
-            </section>
-          ))}
+          <Suspense fallback={<ModelsSkeleton />}>
+            <Models />
+          </Suspense>
         </div>
       </div>
-    </section>
+    </main>
   );
 }

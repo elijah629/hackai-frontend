@@ -15,43 +15,39 @@ import { getDisplayModelName } from "@/lib/utils";
 import { Model } from "@/lib/hackclub";
 import { CheckIcon } from "lucide-react";
 import { PromptInputButton } from "../ai-elements/prompt-input";
+import { useMemo, useState } from "react";
 
 type ChatModelSelectorProps = {
   models: Model[];
-  chefs: string[];
-  compatibilityByModel: Map<string, { missingInputs: string[] }>;
-  effectiveModel?: string;
-  hasModels: boolean;
-  activeModelData?: Model;
-  modelSelectorOpen: boolean;
-  setModelSelectorOpen: (open: boolean) => void;
+  modelData: Model;
+
   onSelect: (modelId: string) => void;
 };
 
 export function ChatModelSelector({
   models,
-  chefs,
-  compatibilityByModel,
-  effectiveModel,
-  hasModels,
-  activeModelData,
-  modelSelectorOpen,
-  setModelSelectorOpen,
+  modelData,
   onSelect,
 }: ChatModelSelectorProps) {
-  const providerSlug = activeModelData?.id.split("/")[0];
+  const [modelSelectorOpen, setModelSelectorOpen] = useState(false);
+
+  const providerSlug = useMemo(
+    () => modelData.id.split("/")[0],
+    [modelData.id],
+  );
+
+  const chefs: string[] = useMemo(
+    () => Array.from(new Set(models.map((x) => x.chef))).sort(),
+    [models],
+  );
 
   return (
     <ModelSelector onOpenChange={setModelSelectorOpen} open={modelSelectorOpen}>
       <ModelSelectorTrigger asChild>
-        <PromptInputButton disabled={!hasModels}>
+        <PromptInputButton>
           {providerSlug && <ModelSelectorLogo provider={providerSlug} />}
           <ModelSelectorName>
-            {activeModelData
-              ? getDisplayModelName(activeModelData.chef, activeModelData.name)
-              : hasModels
-                ? "Select a compatible model"
-                : "No models available"}
+            {getDisplayModelName(modelData.chef, modelData.name)}
           </ModelSelectorName>
         </PromptInputButton>
       </ModelSelectorTrigger>
@@ -67,16 +63,10 @@ export function ChatModelSelector({
                   const supportedInputs = m.architecture.input_modalities
                     .filter((x) => x !== "text")
                     .sort();
-                  const missingInputs =
-                    compatibilityByModel.get(m.id)?.missingInputs ?? [];
 
                   return (
                     <ModelSelectorItem
                       key={m.id}
-                      disabled={
-                        (compatibilityByModel.get(m.id)?.missingInputs.length ??
-                          0) > 0
-                      }
                       onSelect={() => {
                         onSelect(m.id);
                         setModelSelectorOpen(false);
@@ -87,17 +77,12 @@ export function ChatModelSelector({
                       <ModelSelectorName>
                         {getDisplayModelName(m.chef, m.name)}
                       </ModelSelectorName>
-                      {effectiveModel === m.id && (
+                      {modelData.id === m.id && (
                         <CheckIcon className="ml-auto size-4" />
                       )}
                       <div className="flex flex-wrap items-center gap-2">
                         {supportedInputs.map((badge) => (
                           <Badge key={"input-" + badge} variant="outline">
-                            {badge}
-                          </Badge>
-                        ))}
-                        {missingInputs.map((badge) => (
-                          <Badge key={"missing-" + badge} variant="destructive">
                             {badge}
                           </Badge>
                         ))}

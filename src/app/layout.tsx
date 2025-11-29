@@ -8,6 +8,7 @@ import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Header } from "@/components/header";
 import { Analytics } from "@vercel/analytics/next";
+import { AccentProvider } from "@/lib/accent";
 
 const phantomSans = localFont({
   src: [
@@ -48,26 +49,40 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${phantomSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+      <AccentProvider
+        defaultAccent="red"
+        accents={[
+          "red",
+          "peach",
+          "yellow",
+          "green",
+          "teal",
+          "blue",
+          "pink",
+          "mauve",
+        ]}
       >
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="system"
-          enableSystem
-          disableTransitionOnChange
+        <body
+          className={`${phantomSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}
         >
-          <SidebarProvider>
-            <AppSidebar />
-            <SidebarInset className="h-screen min-w-0">
-              <Header />
-              {children}
-            </SidebarInset>
-          </SidebarProvider>
-          <Toaster />
-        </ThemeProvider>
-        <Analytics />
-      </body>
+          <ThemeProvider
+            attribute="class"
+            defaultTheme="system"
+            enableSystem
+            disableTransitionOnChange
+          >
+            <SidebarProvider>
+              <AppSidebar />
+              <SidebarInset className="h-screen min-w-0">
+                <Header />
+                {children}
+              </SidebarInset>
+            </SidebarProvider>
+            <Toaster />
+          </ThemeProvider>
+          <Analytics />
+        </body>
+      </AccentProvider>
     </html>
   );
 }

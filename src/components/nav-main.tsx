@@ -1,5 +1,3 @@
-"use client";
-
 import { Edit } from "lucide-react";
 
 import {
@@ -8,29 +6,24 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { nanoid } from "nanoid";
+import { createChat } from "@/lib/db/actions";
+import Form from "next/form";
 
 export function NavMain() {
-  const router = useRouter();
-
   return (
     <SidebarGroup>
       <SidebarMenu>
         <SidebarMenuItem>
-          <SidebarMenuButton tooltip="New chat" asChild>
-            <Link
-              href={`/`}
-              onNavigate={(e) => {
-                e.preventDefault();
-                router.push(`/c/${nanoid()}`);
-              }}
+          <Form action={createChat}>
+            <SidebarMenuButton
+              tooltip="New chat"
+              type="submit"
+              className="cursor-pointer"
             >
               <Edit />
-              <span>New chat</span>
-            </Link>
-          </SidebarMenuButton>
+              New chat
+            </SidebarMenuButton>
+          </Form>
         </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroup>

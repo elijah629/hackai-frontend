@@ -1,5 +1,3 @@
-import * as React from "react";
-
 import { NavMain } from "@/components/nav-main";
 import { NavChats } from "@/components/nav-chats";
 import { NavUser } from "@/components/nav-user";
@@ -11,13 +9,11 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar";
 import { AppSidebarHeader } from "./app-sidebar-header";
-import { getSession } from "@/app/actions";
+import { Suspense } from "react";
 
 export async function AppSidebar({
   ...props
 }: React.ComponentProps<typeof Sidebar>) {
-  const session = await getSession();
-
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
@@ -25,10 +21,14 @@ export async function AppSidebar({
       </SidebarHeader>
       <SidebarContent>
         <NavMain />
-        <NavChats />
+        <Suspense>
+          <NavChats />
+        </Suspense>
       </SidebarContent>
       <SidebarFooter>
-        <NavUser hasApiKey={session.apiKey !== undefined} />
+        <Suspense>
+          <NavUser />
+        </Suspense>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

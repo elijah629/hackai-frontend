@@ -1,3 +1,5 @@
+"use client";
+
 import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 import {
@@ -15,11 +17,19 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
-import { ChatRow, db } from "@/lib/chat-store";
 import { useState } from "react";
 import { RenameChatDialog } from "./rename-chat-dialog";
+import { Chat } from "@/lib/db/schema/chat";
 
-export function ChatItem({ chat }: { chat: ChatRow }) {
+export function ChatItem({
+  chat,
+  onDelete,
+  onRename,
+}: {
+  chat: Omit<Chat, "messages">;
+  onDelete: () => void;
+  onRename: (icon: string, title: string) => void;
+}) {
   const { isMobile } = useSidebar();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
 
@@ -51,10 +61,7 @@ export function ChatItem({ chat }: { chat: ChatRow }) {
               Rename
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              variant="destructive"
-              onSelect={() => db.chats.delete(chat.id)}
-            >
+            <DropdownMenuItem variant="destructive" onSelect={() => onDelete()}>
               <Trash2 className="text-muted-foreground" />
               Delete chat
             </DropdownMenuItem>
@@ -62,9 +69,9 @@ export function ChatItem({ chat }: { chat: ChatRow }) {
         </DropdownMenu>
       </SidebarMenuItem>
       <RenameChatDialog
-        id={chat.id}
         name={chat.title}
         icon={chat.icon}
+        onRename={onRename}
         open={renameDialogOpen}
         onOpenChange={setRenameDialogOpen}
       />

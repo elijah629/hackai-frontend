@@ -11,6 +11,11 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  allowedDevOrigins: ["*.ngrok-free.app"],
+  experimental: {
+    authInterrupts: true,
+  },
+  cacheComponents: true,
 };
 
 export default nextConfig;

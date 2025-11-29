@@ -1,4 +1,4 @@
-"use client";
+// "use client";
 
 import { ChevronsUpDown, Gauge, Key, LogOut, Trash2 } from "lucide-react";
 
@@ -16,23 +16,38 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
 } from "@/components/ui/sidebar";
 import Link from "next/link";
 import { ApiKeyDialog } from "./api-key-dialog";
-import { useState } from "react";
-import { logout } from "@/app/actions";
 import { ThemeToggle } from "./theme-toggle";
-import { db } from "@/lib/chat-store";
-import { useLiveQuery } from "dexie-react-hooks";
+import { HackClubSignIn } from "./hackclub-signin";
+import { DialogTrigger } from "./ui/dialog";
+import { AvatarImage } from "@radix-ui/react-avatar";
+import { auth } from "@/lib/auth";
+import { headers } from "next/headers";
+import { deleteAllChats, userHasChats } from "@/lib/db/actions";
+import { AccentToggle } from "./accent-toggle";
 
-export function NavUser({ hasApiKey }: { hasApiKey: boolean }) {
-  const { isMobile } = useSidebar();
-  const chatCount = useLiveQuery(() => db.chats.count());
-  const [showApiKeyDialog, setApiKeyDialog] = useState(false);
+export async function NavUser() {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  const hasChats =
+    Boolean(session?.user.id) && (await userHasChats(session!.user.id));
+
+  const name = session?.user.name;
+  const image = session?.user.image as string | undefined;
+  const loggedIn = Boolean(session?.user);
+
+  const initials = name
+    ?.split(" ")
+    ?.map((x) => x[0])
+    .join("")
+    .toUpperCase();
 
   return (
-    <>
+    <ApiKeyDialog>
       <SidebarMenu>
         <SidebarMenuItem>
           <DropdownMenu modal={false}>
@@ -42,36 +57,51 @@ export function NavUser({ hasApiKey }: { hasApiKey: boolean }) {
                 className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
               >
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarFallback className="rounded-lg">h</AvatarFallback>
+                  <AvatarImage src={image} alt={name} />
+                  <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                    {initials ?? "h"}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium">hackclubber</span>
+                  <span className="truncate font-medium">
+                    {name || "hackclubber"}
+                  </span>
                 </div>
                 <ChevronsUpDown className="ml-auto size-4" />
               </SidebarMenuButton>
             </DropdownMenuTrigger>
             <DropdownMenuContent
               className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
-              side={isMobile ? "bottom" : "right"}
+              side="bottom"
               align="end"
               sideOffset={4}
             >
               <DropdownMenuLabel className="p-0 font-normal">
                 <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                   <Avatar className="h-8 w-8 rounded-lg">
-                    <AvatarFallback className="rounded-lg">h</AvatarFallback>
+                    <AvatarImage src={image} alt={name} />
+
+                    <AvatarFallback className="rounded-lg bg-primary text-primary-foreground">
+                      {initials ?? "h"}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="grid flex-1 text-left text-sm leading-tight">
-                    <span className="truncate font-medium">hackclubber</span>
+                    <span className="truncate font-medium">
+                      {name || "hackclubber"}
+                    </span>
                   </div>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
-                <DropdownMenuItem onSelect={() => setApiKeyDialog(true)}>
-                  <Key />
-                  Set API Key
-                </DropdownMenuItem>
+                {loggedIn && (
+                  <DialogTrigger asChild>
+                    <DropdownMenuItem>
+                      <Key />
+                      Set API Key
+                    </DropdownMenuItem>
+                  </DialogTrigger>
+                )}
                 <DropdownMenuItem asChild>
                   <Link href="/usage">
                     <Gauge />
@@ -82,30 +112,48 @@ export function NavUser({ hasApiKey }: { hasApiKey: boolean }) {
               <DropdownMenuSeparator />
               <DropdownMenuGroup>
                 <ThemeToggle />
+                <AccentToggle />
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                disabled={chatCount === 0}
-                onSelect={() => db.chats.clear()}
-                variant="destructive"
-              >
-                <Trash2 />
-                Delete all chats
-              </DropdownMenuItem>
+              {loggedIn && (
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={async () => {
+                    "use server";
 
-              <DropdownMenuItem
-                disabled={!hasApiKey}
-                onSelect={logout}
-                variant="destructive"
-              >
-                <LogOut />
-                Log out
-              </DropdownMenuItem>
+                    if (session) {
+                      await deleteAllChats(session.user.id);
+                    }
+                  }}
+                  disabled={!hasChats}
+                >
+                  <Trash2 />
+                  Delete all chats
+                </DropdownMenuItem>
+              )}
+
+              {loggedIn ? (
+                <DropdownMenuItem
+                  variant="destructive"
+                  disabled={!loggedIn}
+                  onSelect={async () => {
+                    "use server";
+
+                    await auth.api.signOut({
+                      headers: await headers(),
+                    });
+                  }}
+                >
+                  <LogOut />
+                  Log out
+                </DropdownMenuItem>
+              ) : (
+                <HackClubSignIn />
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </SidebarMenuItem>
       </SidebarMenu>
-      <ApiKeyDialog open={showApiKeyDialog} onOpenChange={setApiKeyDialog} />
-    </>
+    </ApiKeyDialog>
   );
 }

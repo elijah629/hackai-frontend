@@ -19,33 +19,23 @@ import {
   MessageAction,
   MessageActions,
 } from "@/components/ai-elements/message";
-import { CopyIcon, MessageSquare, RefreshCcwIcon, Trash2 } from "lucide-react";
-import { UIMessage, UseChatHelpers } from "@ai-sdk/react";
+import { CopyIcon, MessageSquare } from "lucide-react";
+import { UIMessage } from "@ai-sdk/react";
 import { cn } from "@/lib/utils";
 import { ConversationEmptyState } from "@/components/ai-elements/conversation";
 import { streamdownConfig } from "@/lib/streamdown";
 
-export function ChatMessages({
-  messages,
-  regenerate,
-  status,
-  onDeleteMessage,
-}: {
-  messages: UIMessage[];
-  regenerate: UseChatHelpers<UIMessage>["regenerate"];
-  status: UseChatHelpers<UIMessage>["status"];
-  onDeleteMessage?: (messageId: string) => void;
-}) {
+export function StaticChatMessages({ messages }: { messages: UIMessage[] }) {
   return (
     <>
       {messages.length === 0 && (
         <ConversationEmptyState
           icon={<MessageSquare className="size-12" />}
-          title="Start a conversation"
-          description="Type a message below to begin chatting"
+          title="Empty conversation"
+          description="This public chat is empty"
         />
       )}
-      {messages.map((message, messageIndex) => {
+      {messages.map((message) => {
         const sources = message.parts.filter(
           (part) => part.type === "source-url",
         );
@@ -83,16 +73,6 @@ export function ChatMessages({
                       </MessageContent>
                       {message.role === "assistant" && (
                         <MessageActions>
-                          {messageIndex === messages.length - 1 && (
-                            <MessageAction
-                              onClick={() =>
-                                regenerate({ body: { regenerate: true } })
-                              }
-                              label="Retry"
-                            >
-                              <RefreshCcwIcon className="size-3" />
-                            </MessageAction>
-                          )}
                           <MessageAction
                             onClick={() =>
                               navigator.clipboard.writeText(part.text)
@@ -103,18 +83,6 @@ export function ChatMessages({
                           </MessageAction>
                         </MessageActions>
                       )}
-                      {message.role === "user" &&
-                        messageIndex !== 0 &&
-                        onDeleteMessage && (
-                          <MessageActions className="justify-end">
-                            <MessageAction
-                              onClick={() => onDeleteMessage(message.id)}
-                              label="Delete from here"
-                            >
-                              <Trash2 className="size-3" />
-                            </MessageAction>
-                          </MessageActions>
-                        )}
                     </Message>
                   );
                 case "reasoning":
@@ -131,11 +99,7 @@ export function ChatMessages({
                     <Reasoning
                       key={`${message.id}-${i}`}
                       className="w-full"
-                      isStreaming={
-                        status === "streaming" &&
-                        i === message.parts.length - 1 &&
-                        message.id === messages.at(-1)?.id
-                      }
+                      isStreaming={false}
                     >
                       <ReasoningTrigger />
                       <ReasoningContent className="text-muted-foreground ml-6">
