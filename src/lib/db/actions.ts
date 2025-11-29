@@ -72,6 +72,18 @@ export async function setLastModel(chatId: string, lastModel: string) {
   await db.update(chats).set({ lastModel }).where(eq(chats.id, chatId));
 }
 
+export async function setPublicity(chatId: string, publicity: boolean) {
+  const [{ userId }] = await db
+    .update(chats)
+    .set({ isPublic: publicity })
+    .where(eq(chats.id, chatId))
+    .returning({ userId: chats.userId });
+
+  updateTag(`user-chats:${userId}`);
+
+  revalidatePath("/c/" + chatId, "page");
+}
+
 export async function deleteChat(chatId: string) {
   const [deletedChat] = await db
     .delete(chats)

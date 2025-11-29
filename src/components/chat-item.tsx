@@ -1,6 +1,12 @@
 "use client";
 
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import {
+  HatGlasses,
+  MoreHorizontal,
+  Pencil,
+  ShareIcon,
+  Trash2,
+} from "lucide-react";
 
 import {
   DropdownMenu,
@@ -25,10 +31,12 @@ export function ChatItem({
   chat,
   onDelete,
   onRename,
+  setPublicity,
 }: {
   chat: Omit<Chat, "messages">;
   onDelete: () => void;
   onRename: (icon: string, title: string) => void;
+  setPublicity: (isPublic: boolean) => void;
 }) {
   const { isMobile } = useSidebar();
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -59,6 +67,19 @@ export function ChatItem({
             <DropdownMenuItem onSelect={() => setRenameDialogOpen(true)}>
               <Pencil className="text-muted-foreground" />
               Rename
+            </DropdownMenuItem>
+            <DropdownMenuItem onSelect={() => setPublicity(!chat.isPublic)}>
+              {chat.isPublic ? (
+                <>
+                  <HatGlasses />
+                  Make private
+                </>
+              ) : (
+                <>
+                  <ShareIcon />
+                  Make public
+                </>
+              )}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" onSelect={() => onDelete()}>

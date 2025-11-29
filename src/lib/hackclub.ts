@@ -3,7 +3,6 @@ import {
   OpenRouterProvider,
   OpenRouterProviderSettings,
 } from "@openrouter/ai-sdk-provider";
-import { NextResponse } from "next/server";
 
 export const BASE = "https://ai.hackclub.com/proxy/v1";
 

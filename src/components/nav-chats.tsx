@@ -7,7 +7,12 @@ import {
 import { ChatItem } from "./chat-item";
 import { auth } from "@/lib/auth";
 import { headers } from "next/headers";
-import { deleteChat, getChatsFor, renameChat } from "@/lib/db/actions";
+import {
+  deleteChat,
+  getChatsFor,
+  renameChat,
+  setPublicity,
+} from "@/lib/db/actions";
 
 export async function NavChats() {
   const session = await auth.api.getSession({
@@ -34,6 +39,10 @@ export async function NavChats() {
             onRename={async (icon, title) => {
               "use server";
               await renameChat(chat.id, icon, title);
+            }}
+            setPublicity={async (isPublic) => {
+              "use server";
+              await setPublicity(chat.id, isPublic);
             }}
             key={chat.id}
           />
