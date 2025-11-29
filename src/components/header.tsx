@@ -4,6 +4,7 @@ import { Edit, Menu } from "lucide-react";
 import Image from "next/image";
 import orpheus from "@/images/flag-orpheus-top.svg";
 import { createChat } from "@/lib/db/actions";
+import Form from "next/form";
 
 export function Header() {
   return (
