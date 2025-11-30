@@ -3,17 +3,26 @@
 import { Message } from "@/components/ai-elements/message";
 import { UIMessage } from "ai";
 import { DBMessagePart, DBMessagePartSelect } from "@/lib/db/schema/chat";
+import z from "zod";
 
-export type MessageMetadata = {
-  usage?: {
-    promptTokens: number;
-    promptTokensDetails: { cachedTokens: number };
-    completionTokens: number;
-    completionTokensDetails: { reasoningTokens: number };
-    cost: number;
-    totalTokens: number;
-  };
-};
+export const metadataSchema = z.object({
+  usage: z
+    .object({
+      promptTokens: z.number(),
+      promptTokensDetails: z.object({
+        cachedTokens: z.number(),
+      }),
+      completionTokens: z.number(),
+      completionTokensDetails: z.object({
+        reasoningTokens: z.number(),
+      }),
+      cost: z.number(),
+      totalTokens: z.number(),
+    })
+    .optional(),
+});
+
+export type MessageMetadata = z.infer<typeof metadataSchema>;
 
 type DataPart = {};
 type Tools = {};

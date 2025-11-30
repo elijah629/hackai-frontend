@@ -16,7 +16,7 @@ import {
   setLastModel,
   upsertMessage,
 } from "@/lib/db/actions";
-import { Message, MessageMetadata } from "@/types/message";
+import { Message, MessageMetadata, metadataSchema } from "@/types/message";
 
 export const maxDuration = 300;
 
@@ -64,9 +64,12 @@ export async function POST(req: Request) {
         toSendMessages.push(message);
       }
 
-      const validatedMessages = await validateUIMessages({
+      /*const validatedMessages = await validateUIMessages({
         messages: toSendMessages,
-      });
+        metadataSchema,
+      });*/
+
+      const validatedMessages = toSendMessages; // broken for { type: "file" } coming from model apparently
 
       const provider = createHackclub({
         apiKey,
