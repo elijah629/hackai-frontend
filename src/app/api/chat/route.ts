@@ -3,6 +3,7 @@ import {
   convertToModelMessages,
   validateUIMessages,
   generateId,
+  smoothStream,
 } from "ai";
 import { NextResponse } from "next/server";
 import { createHackclub } from "@/lib/hackclub";
@@ -91,12 +92,13 @@ export async function POST(req: Request) {
           },
         }),
         // TODO: allow temp control, etc
-        temperature: 0.4,
+        temperature: 0.3,
         messages: convertToModelMessages(validatedMessages),
         system: system({ webSearch }),
-        // experimental_transform: smoothStream({
-        //  chunking: /.{3}/,
-        // }),
+        experimental_transform: smoothStream({
+          chunking: "word",
+          delayInMs: 5,
+        }),
       });
 
       result.consumeStream();

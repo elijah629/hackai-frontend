@@ -1,3 +1,5 @@
+"use client";
+
 import {
   Reasoning,
   ReasoningContent,
@@ -20,12 +22,24 @@ import {
   MessageActions,
 } from "@/components/ai-elements/message";
 import { CopyIcon, MessageSquare } from "lucide-react";
-import { UIMessage } from "@ai-sdk/react";
 import { cn } from "@/lib/utils";
 import { ConversationEmptyState } from "@/components/ai-elements/conversation";
 import { streamdownConfig } from "@/lib/streamdown";
+import { Message as Msg } from "@/types/message";
+import {
+  Context,
+  ContextCacheUsage,
+  ContextContent,
+  ContextContentBody,
+  ContextContentFooter,
+  ContextContentHeader,
+  ContextInputUsage,
+  ContextOutputUsage,
+  ContextReasoningUsage,
+  ContextTrigger,
+} from "@/components/ai-elements/context";
 
-export function StaticChatMessages({ messages }: { messages: UIMessage[] }) {
+export function StaticChatMessages({ messages }: { messages: Msg[] }) {
   return (
     <>
       {messages.length === 0 && (
@@ -81,6 +95,21 @@ export function StaticChatMessages({ messages }: { messages: UIMessage[] }) {
                           >
                             <CopyIcon className="size-3" />
                           </MessageAction>
+                          {message.metadata?.usage && (
+                            <Context usage={message.metadata.usage}>
+                              <ContextTrigger />
+                              <ContextContent>
+                                <ContextContentHeader />
+                                <ContextContentBody>
+                                  <ContextInputUsage />
+                                  <ContextOutputUsage />
+                                  <ContextReasoningUsage />
+                                  <ContextCacheUsage />
+                                </ContextContentBody>
+                                <ContextContentFooter />
+                              </ContextContent>
+                            </Context>
+                          )}
                         </MessageActions>
                       )}
                     </Message>

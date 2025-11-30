@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono } from "next/font/google";
-import localFont from "next/font/local";
+import { Geist, Geist_Mono } from "next/font/google";
+// import localFont from "next/font/local";
 import "./globals.css";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -10,7 +10,7 @@ import { Header } from "@/components/header";
 import { Analytics } from "@vercel/analytics/next";
 import { AccentProvider } from "@/lib/accent";
 
-const phantomSans = localFont({
+/*const phantomSans = localFont({
   src: [
     {
       path: "../fonts/Italic.woff2",
@@ -30,10 +30,15 @@ const phantomSans = localFont({
   ],
   variable: "--font-phantom-sans",
   display: "swap",
+});*/
+
+const geist = Geist({
+  variable: "--font-geist",
+  subsets: ["latin"],
 });
 
-const jetbrainsMono = JetBrains_Mono({
-  variable: "--font-jetbrains-mono",
+const geistMono = Geist_Mono({
+  variable: "--font-geist-mono",
   subsets: ["latin"],
 });
 
@@ -63,7 +68,7 @@ export default function RootLayout({
         ]}
       >
         <body
-          className={`${phantomSans.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+          className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}
         >
           <ThemeProvider
             attribute="class"

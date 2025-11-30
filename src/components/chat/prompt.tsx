@@ -15,10 +15,9 @@ import {
   PromptInputTextarea,
   PromptInputTools,
 } from "@/components/ai-elements/prompt-input";
-import { ChatModelSelector } from "./model-selector";
 import { Model } from "@/lib/hackclub";
 import { Suggestions, Suggestion } from "../ai-elements/suggestion";
-import { UIMessage, UseChatHelpers } from "@ai-sdk/react";
+import { UseChatHelpers } from "@ai-sdk/react";
 import { GlobeIcon } from "lucide-react";
 import {
   Context,
@@ -32,7 +31,7 @@ import {
   ContextReasoningUsage,
   ContextTrigger,
 } from "@/components/ai-elements/context";
-import { MessageMetadata } from "@/types/message";
+import { Message, MessageMetadata } from "@/types/message";
 
 const suggestions = [
   "What are the latest trends in AI?",
@@ -48,7 +47,6 @@ export function ChatPrompt({
 
   stop,
 
-  models,
   modelData,
 
   promptPlaceholder,
@@ -56,7 +54,6 @@ export function ChatPrompt({
   useWebSearch,
   setUseWebSearch,
 
-  onModelSelect,
   onSubmit,
   onSuggestionClick,
 
@@ -74,7 +71,6 @@ export function ChatPrompt({
 
   stop: () => void;
 
-  models: Model[];
   modelData: Model;
 
   promptPlaceholder: string;
@@ -82,13 +78,12 @@ export function ChatPrompt({
   useWebSearch: boolean;
   setUseWebSearch: (useWebSearch: boolean) => void;
 
-  onModelSelect: (modelId: string) => void;
   onSubmit: (message: PromptInputMessage) => void;
   onSuggestionClick: (suggestion: string) => void;
 
   isSubmitDisabled: boolean;
 
-  status: UseChatHelpers<UIMessage>["status"];
+  status: UseChatHelpers<Message>["status"];
 
   attachmentsEnabled: boolean;
   showSuggestions: boolean;
@@ -128,30 +123,23 @@ export function ChatPrompt({
                 </>
               )}
               <PromptInputButton
+                className="sm:hidden"
+                onClick={() => setUseWebSearch(!useWebSearch)}
+                variant={useWebSearch ? "default" : "ghost"}
+                size="icon-sm"
+              >
+                <GlobeIcon size={16} />
+              </PromptInputButton>
+              <PromptInputButton
+                className="sm:inline-flex hidden"
                 onClick={() => setUseWebSearch(!useWebSearch)}
                 variant={useWebSearch ? "default" : "ghost"}
               >
                 <GlobeIcon size={16} />
                 <span>Search</span>
               </PromptInputButton>
-              <ChatModelSelector
-                modelData={modelData}
-                models={models}
-                onSelect={onModelSelect}
-              />
-              <Context
-                maxTokens={modelData.context_length}
-                totalCostUSD={usageData.cost}
-                usage={{
-                  inputTokens: usageData.promptTokens,
-                  outputTokens: usageData.completionTokens,
-                  totalTokens: usageData.totalTokens,
-                  cachedInputTokens: usageData.promptTokensDetails.cachedTokens,
-                  reasoningTokens:
-                    usageData.completionTokensDetails.reasoningTokens,
-                }}
-                usedTokens={usageData.promptTokens + usageData.completionTokens}
-              >
+
+              <Context maxTokens={modelData.context_length} usage={usageData}>
                 <ContextTrigger />
                 <ContextContent>
                   <ContextContentHeader />

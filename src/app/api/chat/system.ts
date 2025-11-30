@@ -6,8 +6,8 @@ import systemFormat from "./system-format.md";
 export function system({ webSearch }: { webSearch: boolean }): string {
   const parts: (string | false)[] = [
     systemIntro.replaceAll("{{current_date}}", new Date().toLocaleDateString()),
-    systemCoC,
     webSearch && systemWeb,
+    systemCoC,
     systemFormat,
   ];
 

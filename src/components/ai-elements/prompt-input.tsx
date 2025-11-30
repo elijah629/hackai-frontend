@@ -65,6 +65,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -819,8 +820,49 @@ export const PromptInputTextarea = ({
   const attachments = usePromptInputAttachments();
   const [isComposing, setIsComposing] = useState(false);
 
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  const resizeTextarea = () => {
+    const textarea = textareaRef.current;
+
+    if (!textarea) return;
+
+    if (!textarea.value) {
+      textarea.style.height = "";
+
+      return;
+    }
+
+    textarea.style.height = "auto";
+
+    const computed = window.getComputedStyle(textarea);
+
+    const maxHeight = parseFloat(computed.maxHeight || "0");
+
+    const minHeight = parseFloat(computed.minHeight || "0");
+
+    let newHeight = textarea.scrollHeight;
+
+    if (minHeight > 0) {
+      newHeight = Math.max(newHeight, minHeight);
+    }
+
+    if (maxHeight > 0) {
+      newHeight = Math.min(newHeight, maxHeight);
+    }
+
+    textarea.style.height = `${newHeight}px`;
+  };
+
+  const isCoarsePointer =
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(pointer: coarse)").matches;
+
   const handleKeyDown: KeyboardEventHandler<HTMLTextAreaElement> = (e) => {
     if (e.key === "Enter") {
+      if (isCoarsePointer) return;
+
       if (isComposing || e.nativeEvent.isComposing) {
         return;
       }
@@ -891,18 +933,28 @@ export const PromptInputTextarea = ({
         onChange,
       };
 
+  useLayoutEffect(() => {
+    resizeTextarea();
+  });
+
   return (
-    <InputGroupTextarea
-      className={cn("field-sizing-content max-h-48 min-h-16", className)}
-      name="message"
-      onCompositionEnd={() => setIsComposing(false)}
-      onCompositionStart={() => setIsComposing(true)}
-      onKeyDown={handleKeyDown}
-      onPaste={handlePaste}
-      placeholder={placeholder}
-      {...props}
-      {...controlledProps}
-    />
+    <div className="w-full">
+      <InputGroupTextarea
+        ref={textareaRef}
+        className={cn(
+          "max-h-48 min-h-16 resize-none overflow-y-auto",
+          className,
+        )}
+        name="message"
+        onCompositionEnd={() => setIsComposing(false)}
+        onCompositionStart={() => setIsComposing(true)}
+        onKeyDown={handleKeyDown}
+        onPaste={handlePaste}
+        placeholder={placeholder}
+        {...props}
+        {...controlledProps}
+      />
+    </div>
   );
 };
 

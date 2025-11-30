@@ -121,3 +121,45 @@ export const mapDBPartToUIMessagePart = (
       throw new Error(`Unsupported part type: ${part.type}`);
   }
 };
+
+export const totalUsage = (messages: Message[]) =>
+  messages.reduce<NonNullable<MessageMetadata["usage"]>>(
+    (total, message) => {
+      const usage = message.metadata?.usage;
+
+      if (!usage) {
+        return total;
+      }
+
+      return {
+        promptTokens: (total?.promptTokens ?? 0) + (usage.promptTokens ?? 0),
+
+        promptTokensDetails: {
+          cachedTokens:
+            (total?.promptTokensDetails?.cachedTokens ?? 0) +
+            (usage.promptTokensDetails?.cachedTokens ?? 0),
+        },
+
+        completionTokens:
+          (total?.completionTokens ?? 0) + (usage.completionTokens ?? 0),
+
+        completionTokensDetails: {
+          reasoningTokens:
+            (total?.completionTokensDetails?.reasoningTokens ?? 0) +
+            (usage.completionTokensDetails?.reasoningTokens ?? 0),
+        },
+
+        cost: (total?.cost ?? 0) + (usage.cost ?? 0),
+
+        totalTokens: (total?.totalTokens ?? 0) + (usage.totalTokens ?? 0),
+      };
+    },
+    {
+      promptTokens: 0,
+      promptTokensDetails: { cachedTokens: 0 },
+      completionTokens: 0,
+      completionTokensDetails: { reasoningTokens: 0 },
+      cost: 0,
+      totalTokens: 0,
+    },
+  );

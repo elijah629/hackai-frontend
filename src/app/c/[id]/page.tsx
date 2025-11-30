@@ -7,6 +7,7 @@ import { auth } from "@/lib/auth";
 import { Suspense } from "react";
 import { StaticChat } from "@/components/chat/static";
 import { Metadata } from "next";
+import { ChatSkeleton } from "@/components/chat/skeleton";
 
 export async function generateMetadata({
   params,
@@ -36,7 +37,7 @@ export default async function ChatPage({
   params: Promise<{ id: string }>;
 }) {
   return (
-    <Suspense fallback={<StaticChat messages={[]} />}>
+    <Suspense fallback={<ChatSkeleton />}>
       <ChatGetter params={params} />
     </Suspense>
   );
@@ -64,7 +65,14 @@ async function ChatGetter({ params }: { params: Promise<{ id: string }> }) {
           />
         );
       } else {
-        return <StaticChat messages={chat.chat.messages} />;
+        return (
+          <StaticChat
+            title={chat.chat.title}
+            icon={chat.chat.icon}
+            lastModel={models.find((model) => model.id === chat.chat.lastModel)}
+            messages={chat.chat.messages}
+          />
+        );
       }
     case "unauthorized":
       unauthorized();

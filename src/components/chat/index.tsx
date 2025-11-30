@@ -15,9 +15,10 @@ import { toast } from "sonner";
 import { ChatMessages } from "@/components/chat/messages";
 
 import { ChatPrompt } from "./prompt";
-import { Message, MessageMetadata } from "@/types/message";
+import { Message, totalUsage } from "@/types/message";
 import { DefaultChatTransport } from "ai";
 import { deleteMessage, renameChat } from "@/lib/db/actions";
+import { ChatModelSelector } from "./model-selector";
 
 export function Chat({
   models,
@@ -60,46 +61,7 @@ export function Chat({
 
   // TODO: make this a running total so we dont re-add previous messages every update
   const usageData = useMemo(() => {
-    return messages.reduce<NonNullable<MessageMetadata["usage"]>>(
-      (total, message) => {
-        const usage = message.metadata?.usage;
-
-        if (!usage) {
-          return total;
-        }
-
-        return {
-          promptTokens: (total?.promptTokens ?? 0) + (usage.promptTokens ?? 0),
-
-          promptTokensDetails: {
-            cachedTokens:
-              (total?.promptTokensDetails?.cachedTokens ?? 0) +
-              (usage.promptTokensDetails?.cachedTokens ?? 0),
-          },
-
-          completionTokens:
-            (total?.completionTokens ?? 0) + (usage.completionTokens ?? 0),
-
-          completionTokensDetails: {
-            reasoningTokens:
-              (total?.completionTokensDetails?.reasoningTokens ?? 0) +
-              (usage.completionTokensDetails?.reasoningTokens ?? 0),
-          },
-
-          cost: (total?.cost ?? 0) + (usage.cost ?? 0),
-
-          totalTokens: (total?.totalTokens ?? 0) + (usage.totalTokens ?? 0),
-        };
-      },
-      {
-        promptTokens: 0,
-        promptTokensDetails: { cachedTokens: 0 },
-        completionTokens: 0,
-        completionTokensDetails: { reasoningTokens: 0 },
-        cost: 0,
-        totalTokens: 0,
-      },
-    );
+    return totalUsage(messages);
   }, [messages]);
 
   const modelData = useMemo(
@@ -167,6 +129,13 @@ export function Chat({
 
   return (
     <div className="flex size-full flex-col divide-y overflow-hidden">
+      <header className="p-2">
+        <ChatModelSelector
+          modelData={modelData}
+          models={models}
+          onSelect={setModel}
+        />
+      </header>
       <Conversation>
         <ConversationContent>
           <ChatMessages
@@ -188,8 +157,6 @@ export function Chat({
       <ChatPrompt
         usageData={usageData}
         // Models
-        models={models}
-        onModelSelect={setModel}
         modelData={modelData}
         // useChat
         stop={stop}

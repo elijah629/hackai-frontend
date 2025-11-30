@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/hover-card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import type { LanguageModelUsage } from "ai";
+import type { MessageMetadata } from "@/types/message";
 import { type ComponentProps, createContext, useContext } from "react";
 
 const PERCENT_MAX = 100;
@@ -17,11 +17,13 @@ const ICON_VIEWBOX = 24;
 const ICON_CENTER = 12;
 const ICON_STROKE_WIDTH = 2;
 
+type Usage = NonNullable<MessageMetadata["usage"]>;
+
 type ContextSchema = {
+  usage: Usage;
+  maxTokens?: number;
   usedTokens: number;
-  maxTokens: number;
-  usage?: LanguageModelUsage;
-  totalCostUSD?: number;
+  totalCostUSD: number;
 };
 
 const ContextContext = createContext<ContextSchema | null>(null);
@@ -36,31 +38,37 @@ const useContextValue = () => {
   return context;
 };
 
-export type ContextProps = ComponentProps<typeof HoverCard> & ContextSchema;
+export type ContextProps = ComponentProps<typeof HoverCard> & {
+  usage: Usage;
+  maxTokens?: number;
+};
 
-export const Context = ({
-  usedTokens,
-  maxTokens,
-  usage,
-  totalCostUSD,
-  ...props
-}: ContextProps) => (
-  <ContextContext.Provider
-    value={{
-      usedTokens,
-      maxTokens,
-      usage,
-      totalCostUSD,
-    }}
-  >
-    <HoverCard closeDelay={0} openDelay={0} {...props} />
-  </ContextContext.Provider>
-);
+export const Context = ({ usage, maxTokens, ...props }: ContextProps) => {
+  const usedTokens = (usage.promptTokens ?? 0) + (usage.completionTokens ?? 0);
+
+  return (
+    <ContextContext.Provider
+      value={{
+        usage,
+        maxTokens,
+        usedTokens,
+        totalCostUSD: usage.cost ?? 0,
+      }}
+    >
+      <HoverCard closeDelay={0} openDelay={0} {...props} />
+    </ContextContext.Provider>
+  );
+};
 
 const ContextIcon = () => {
   const { usedTokens, maxTokens } = useContextValue();
+
+  if (!maxTokens || maxTokens <= 0) {
+    return null;
+  }
+
   const circumference = 2 * Math.PI * ICON_RADIUS;
-  const usedPercent = usedTokens / maxTokens;
+  const usedPercent = Math.min(usedTokens / maxTokens, 1);
   const dashOffset = circumference * (1 - usedPercent);
 
   return (
@@ -101,23 +109,47 @@ const ContextIcon = () => {
 export type ContextTriggerProps = ComponentProps<typeof Button>;
 
 export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
-  const { usedTokens, maxTokens } = useContextValue();
-  const usedPercent = usedTokens / maxTokens;
-  const renderedPercent = new Intl.NumberFormat("en-US", {
-    style: "percent",
-    maximumFractionDigits: 1,
-  }).format(usedPercent);
+  const { usedTokens, maxTokens, usage } = useContextValue();
+
+  if (children) {
+    return <HoverCardTrigger asChild>{children}</HoverCardTrigger>;
+  }
+
+  const hasMaxTokens = typeof maxTokens === "number" && maxTokens > 0;
+  const usedPercent = hasMaxTokens ? usedTokens / maxTokens : undefined;
+
+  const renderedPercent =
+    hasMaxTokens && maxTokens
+      ? new Intl.NumberFormat("en-US", {
+          style: "percent",
+          maximumFractionDigits: 1,
+        }).format(usedPercent ?? 0)
+      : null;
+
+  const totalTokens =
+    usage.totalTokens ??
+    (usage.promptTokens ?? 0) + (usage.completionTokens ?? 0);
+
+  const formattedTotalTokens = new Intl.NumberFormat("en-US", {
+    notation: "compact",
+  }).format(totalTokens);
 
   return (
     <HoverCardTrigger asChild>
-      {children ?? (
-        <Button type="button" variant="ghost" {...props}>
+      <Button type="button" variant="ghost" {...props}>
+        {hasMaxTokens ? (
+          <>
+            <span className="font-medium text-muted-foreground">
+              {renderedPercent}
+            </span>
+            <ContextIcon />
+          </>
+        ) : (
           <span className="font-medium text-muted-foreground">
-            {renderedPercent}
+            {formattedTotalTokens} tokens
           </span>
-          <ContextIcon />
-        </Button>
-      )}
+        )}
+      </Button>
     </HoverCardTrigger>
   );
 };
@@ -141,32 +173,57 @@ export const ContextContentHeader = ({
   className,
   ...props
 }: ContextContentHeaderProps) => {
-  const { usedTokens, maxTokens } = useContextValue();
-  const usedPercent = usedTokens / maxTokens;
-  const displayPct = new Intl.NumberFormat("en-US", {
-    style: "percent",
-    maximumFractionDigits: 1,
-  }).format(usedPercent);
+  const { usedTokens, maxTokens, usage } = useContextValue();
+  const hasMaxTokens = typeof maxTokens === "number" && maxTokens > 0;
+  const usedPercent = hasMaxTokens ? usedTokens / maxTokens : 0;
+
+  const displayPct =
+    hasMaxTokens && maxTokens
+      ? new Intl.NumberFormat("en-US", {
+          style: "percent",
+          maximumFractionDigits: 1,
+        }).format(usedPercent)
+      : null;
+
   const used = new Intl.NumberFormat("en-US", {
     notation: "compact",
   }).format(usedTokens);
+
+  const totalTokens =
+    usage.totalTokens ??
+    (usage.promptTokens ?? 0) + (usage.completionTokens ?? 0);
+
   const total = new Intl.NumberFormat("en-US", {
     notation: "compact",
-  }).format(maxTokens);
+  }).format(hasMaxTokens ? maxTokens! : totalTokens);
 
   return (
     <div className={cn("w-full space-y-2 p-3", className)} {...props}>
       {children ?? (
         <>
           <div className="flex items-center justify-between gap-3 text-xs">
-            <p>{displayPct}</p>
-            <p className="font-mono text-muted-foreground">
-              {used} / {total}
-            </p>
+            {hasMaxTokens ? (
+              <>
+                <p>{displayPct}</p>
+                <p className="font-mono text-muted-foreground">
+                  {used} / {total}
+                </p>
+              </>
+            ) : (
+              <>
+                <p className="text-muted-foreground">Total tokens</p>
+                <p className="font-mono text-muted-foreground">{total}</p>
+              </>
+            )}
           </div>
-          <div className="space-y-2">
-            <Progress className="bg-muted" value={usedPercent * PERCENT_MAX} />
-          </div>
+          {hasMaxTokens ? (
+            <div className="space-y-2">
+              <Progress
+                className="bg-muted"
+                value={Math.min(usedPercent * PERCENT_MAX, PERCENT_MAX)}
+              />
+            </div>
+          ) : null}
         </>
       )}
     </div>
@@ -195,6 +252,7 @@ export const ContextContentFooter = ({
   const { totalCostUSD } = useContextValue();
   const totalCostText = new Intl.NumberFormat("en-US", {
     style: "currency",
+    maximumFractionDigits: 8,
     currency: "USD",
   }).format(totalCostUSD ?? 0);
 
@@ -224,7 +282,7 @@ export const ContextInputUsage = ({
   ...props
 }: ContextInputUsageProps) => {
   const { usage } = useContextValue();
-  const inputTokens = usage?.inputTokens ?? 0;
+  const inputTokens = usage?.promptTokens ?? 0;
 
   if (children) {
     return children;
@@ -253,7 +311,7 @@ export const ContextOutputUsage = ({
   ...props
 }: ContextOutputUsageProps) => {
   const { usage } = useContextValue();
-  const outputTokens = usage?.outputTokens ?? 0;
+  const outputTokens = usage?.completionTokens ?? 0;
 
   if (children) {
     return children;
@@ -282,7 +340,7 @@ export const ContextReasoningUsage = ({
   ...props
 }: ContextReasoningUsageProps) => {
   const { usage } = useContextValue();
-  const reasoningTokens = usage?.reasoningTokens ?? 0;
+  const reasoningTokens = usage?.completionTokensDetails?.reasoningTokens ?? 0;
 
   if (children) {
     return children;
@@ -311,7 +369,7 @@ export const ContextCacheUsage = ({
   ...props
 }: ContextCacheUsageProps) => {
   const { usage } = useContextValue();
-  const cacheTokens = usage?.cachedInputTokens ?? 0;
+  const cacheTokens = usage?.promptTokensDetails?.cachedTokens ?? 0;
 
   if (children) {
     return children;

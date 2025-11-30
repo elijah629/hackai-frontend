@@ -20,20 +20,32 @@ import {
   MessageActions,
 } from "@/components/ai-elements/message";
 import { CopyIcon, MessageSquare, RefreshCcwIcon, Trash2 } from "lucide-react";
-import { UIMessage, UseChatHelpers } from "@ai-sdk/react";
+import { UseChatHelpers } from "@ai-sdk/react";
 import { cn } from "@/lib/utils";
 import { ConversationEmptyState } from "@/components/ai-elements/conversation";
 import { streamdownConfig } from "@/lib/streamdown";
-
+import { Message as Msg } from "@/types/message";
+import {
+  Context,
+  ContextCacheUsage,
+  ContextContent,
+  ContextContentBody,
+  ContextContentFooter,
+  ContextContentHeader,
+  ContextInputUsage,
+  ContextOutputUsage,
+  ContextReasoningUsage,
+  ContextTrigger,
+} from "@/components/ai-elements/context";
 export function ChatMessages({
   messages,
   regenerate,
   status,
   onDeleteMessage,
 }: {
-  messages: UIMessage[];
+  messages: Msg[];
   regenerate: () => void;
-  status: UseChatHelpers<UIMessage>["status"];
+  status: UseChatHelpers<Msg>["status"];
   onDeleteMessage?: (messageId: string) => void;
 }) {
   return (
@@ -99,6 +111,21 @@ export function ChatMessages({
                           >
                             <CopyIcon className="size-3" />
                           </MessageAction>
+                          {message.metadata?.usage && (
+                            <Context usage={message.metadata.usage}>
+                              <ContextTrigger />
+                              <ContextContent>
+                                <ContextContentHeader />
+                                <ContextContentBody>
+                                  <ContextInputUsage />
+                                  <ContextOutputUsage />
+                                  <ContextReasoningUsage />
+                                  <ContextCacheUsage />
+                                </ContextContentBody>
+                                <ContextContentFooter />
+                              </ContextContent>
+                            </Context>
+                          )}
                         </MessageActions>
                       )}
                       {message.role === "user" &&
