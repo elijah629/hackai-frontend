@@ -64,12 +64,10 @@ export async function POST(req: Request) {
         toSendMessages.push(message);
       }
 
-      /*const validatedMessages = await validateUIMessages({
+      const validatedMessages = await validateUIMessages<Message>({
         messages: toSendMessages,
         metadataSchema,
-      });*/
-
-      const validatedMessages = toSendMessages; // broken for { type: "file" } coming from model apparently
+      });
 
       const provider = createHackclub({
         apiKey,

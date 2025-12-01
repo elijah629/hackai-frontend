@@ -5,24 +5,27 @@ import { UIMessage } from "ai";
 import { DBMessagePart, DBMessagePartSelect } from "@/lib/db/schema/chat";
 import z from "zod";
 
-export const metadataSchema = z.object({
-  usage: z
-    .object({
-      promptTokens: z.number(),
-      promptTokensDetails: z.object({
-        cachedTokens: z.number(),
-      }),
-      completionTokens: z.number(),
-      completionTokensDetails: z.object({
-        reasoningTokens: z.number(),
-      }),
-      cost: z.number(),
-      totalTokens: z.number(),
-    })
-    .optional(),
+export const usageMetadata = z.object({
+  promptTokens: z.number(),
+  promptTokensDetails: z.object({
+    cachedTokens: z.number(),
+  }),
+  completionTokens: z.number(),
+  completionTokensDetails: z.object({
+    reasoningTokens: z.number(),
+  }),
+  cost: z.number(),
+  totalTokens: z.number(),
 });
 
+export const metadataSchema = z
+  .object({
+    usage: usageMetadata.optional(),
+  })
+  .optional();
+
 export type MessageMetadata = z.infer<typeof metadataSchema>;
+export type MessageUsageMetadata = z.infer<typeof usageMetadata>;
 
 type DataPart = {};
 type Tools = {};
@@ -102,7 +105,7 @@ export const mapDBPartToUIMessagePart = (
       return {
         type: part.type,
         mediaType: part.file_mediaType!,
-        filename: part.file_filename!,
+        filename: part.file_filename ?? undefined,
         url: part.file_url!,
       };
     case "source-document":
@@ -132,7 +135,7 @@ export const mapDBPartToUIMessagePart = (
 };
 
 export const totalUsage = (messages: Message[]) =>
-  messages.reduce<NonNullable<MessageMetadata["usage"]>>(
+  messages.reduce<MessageUsageMetadata>(
     (total, message) => {
       const usage = message.metadata?.usage;
 

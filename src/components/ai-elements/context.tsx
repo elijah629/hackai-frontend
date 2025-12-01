@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/hover-card";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import type { MessageMetadata } from "@/types/message";
+import type { MessageUsageMetadata } from "@/types/message";
 import { type ComponentProps, createContext, useContext } from "react";
 
 const PERCENT_MAX = 100;
@@ -17,10 +17,8 @@ const ICON_VIEWBOX = 24;
 const ICON_CENTER = 12;
 const ICON_STROKE_WIDTH = 2;
 
-type Usage = NonNullable<MessageMetadata["usage"]>;
-
 type ContextSchema = {
-  usage: Usage;
+  usage: MessageUsageMetadata;
   maxTokens?: number;
   usedTokens: number;
   totalCostUSD: number;
@@ -39,7 +37,7 @@ const useContextValue = () => {
 };
 
 export type ContextProps = ComponentProps<typeof HoverCard> & {
-  usage: Usage;
+  usage: MessageUsageMetadata;
   maxTokens?: number;
 };
 

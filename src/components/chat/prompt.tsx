@@ -31,7 +31,11 @@ import {
   ContextReasoningUsage,
   ContextTrigger,
 } from "@/components/ai-elements/context";
-import { Message, MessageMetadata } from "@/types/message";
+import {
+  Message,
+  MessageMetadata,
+  MessageUsageMetadata,
+} from "@/types/message";
 
 const suggestions = [
   "What are the latest trends in AI?",
@@ -88,7 +92,7 @@ export function ChatPrompt({
   attachmentsEnabled: boolean;
   showSuggestions: boolean;
 
-  usageData: NonNullable<MessageMetadata["usage"]>;
+  usageData: MessageUsageMetadata;
 }) {
   return (
     <div className="grid shrink-0 gap-4 pt-4">
