@@ -30,11 +30,14 @@ export default function Page() {
               </Button>
             </Form>
           </div>
-          <div>
+          <div className="flex gap-2">
             <Button asChild variant="outline" size="icon">
               <Link href="https://github.com/elijah629/hackai-frontend">
                 <SiGithub />
               </Link>
+            </Button>
+            <Button asChild>
+              <Link href="/privacy">Privacy Policy</Link>
             </Button>
           </div>
         </div>

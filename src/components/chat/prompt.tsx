@@ -36,6 +36,7 @@ import {
   MessageMetadata,
   MessageUsageMetadata,
 } from "@/types/message";
+import Link from "next/link";
 
 const suggestions = [
   "What are the latest trends in AI?",
@@ -100,7 +101,7 @@ export function ChatPrompt({
         onSuggestionClick={onSuggestionClick}
         shouldRender={showSuggestions}
       />
-      <div className="w-full px-4 pb-4">
+      <div className="w-full px-4">
         <PromptInput globalDrop multiple onSubmit={onSubmit}>
           <PromptInputHeader className="p-0">
             <PromptInputAttachments>
@@ -171,6 +172,16 @@ export function ChatPrompt({
           </PromptInputFooter>
         </PromptInput>
       </div>
+      <span className="w-full text-sm text-center pb-2 -mt-1">
+        Messages may be monitored. Review our{" "}
+        <Link
+          className="text-primary underline"
+          target="_blank"
+          href="/privacy"
+        >
+          Privacy Policy
+        </Link>
+      </span>
     </div>
   );
 }
