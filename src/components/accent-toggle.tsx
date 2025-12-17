@@ -10,7 +10,7 @@ import {
   DropdownMenuSubContent,
 } from "@/components/ui/dropdown-menu";
 import { useAccent } from "@/lib/accent";
-import { capitalizeFirstLetter } from "better-auth/react";
+import { capitalizeFirstLetter } from "better-auth";
 export function AccentToggle() {
   const { setAccent, accent, accents } = useAccent();
 
