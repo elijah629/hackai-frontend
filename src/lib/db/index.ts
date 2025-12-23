@@ -6,7 +6,7 @@ import * as chat from "./schema/chat";
 
 const pool = new Pool({
   connectionString: process.env.POSTGRESQL_CONNECTION_STRING!,
-  max: 20,
+  max: 200,
   idleTimeoutMillis: 30_000,
 });
 
