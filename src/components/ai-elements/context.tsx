@@ -134,7 +134,7 @@ export const ContextTrigger = ({ children, ...props }: ContextTriggerProps) => {
 
   return (
     <HoverCardTrigger asChild>
-      <Button type="button" variant="ghost" {...props}>
+      <Button type="button" variant="ghost" size="sm" {...props}>
         {hasMaxTokens ? (
           <>
             <span className="font-medium text-muted-foreground">

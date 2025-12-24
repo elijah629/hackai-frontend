@@ -7,7 +7,6 @@ import {
 } from "@/components/ai-elements/conversation";
 import { type PromptInputMessage } from "@/components/ai-elements/prompt-input";
 
-import { Loader } from "@/components/ai-elements/loader";
 import { useMemo, useState } from "react";
 import { Model } from "@/lib/hackclub";
 import { useChat } from "@ai-sdk/react";
@@ -19,6 +18,9 @@ import { Message, totalUsage } from "@/types/message";
 import { DefaultChatTransport } from "ai";
 import { deleteMessage, renameChat } from "@/lib/db/actions";
 import { ChatModelSelector } from "./model-selector";
+import { Spinner } from "../ui/spinner";
+import { ModelParameterModal } from "../model-parameter-modal";
+import { ModelParameters } from "@/types/model-parameters";
 
 export function Chat({
   models,
@@ -33,6 +35,9 @@ export function Chat({
 }) {
   const [model, setModel] = useState<string>(initialModel);
   const [text, setText] = useState("");
+  const [parameters, setParameters] = useState<ModelParameters>({
+    temperature: 0.3,
+  });
 
   const [webSearch, setWebSearch] = useState(false);
 
@@ -47,6 +52,8 @@ export function Chat({
       transport: new DefaultChatTransport({
         api: "/api/chat",
         prepareSendMessagesRequest: ({ messages, body }) => {
+          // NOTE: cannot use state here as all outer variables are frozen on first render
+
           const lastMessage = messages.at(-1);
           return {
             body: {
@@ -101,6 +108,7 @@ export function Chat({
         body: {
           model,
           webSearch,
+          parameters,
         },
       },
     );
@@ -129,11 +137,15 @@ export function Chat({
 
   return (
     <div className="flex size-full flex-col divide-y overflow-hidden">
-      <header className="p-2">
+      <header className="p-2 flex justify-between">
         <ChatModelSelector
           modelData={modelData}
           models={models}
           onSelect={setModel}
+        />
+        <ModelParameterModal
+          parameters={parameters}
+          onChangeParameters={setParameters}
         />
       </header>
       <Conversation>
@@ -142,13 +154,15 @@ export function Chat({
             messages={messages}
             status={status}
             regenerate={() =>
-              regenerate({ body: { regenerate: true, model, webSearch } })
+              regenerate({
+                body: { regenerate: true, model, webSearch, parameters },
+              })
             }
             onDeleteMessage={handleDeleteFromMessage}
           />
           {status === "submitted" && (
             <div>
-              <Loader />
+              <Spinner />
             </div>
           )}
         </ConversationContent>

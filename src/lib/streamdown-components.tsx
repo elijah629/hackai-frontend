@@ -2,19 +2,13 @@ import { type JSX, memo } from "react";
 import { cn } from "./utils";
 import {
   InlineCitation,
-  InlineCitationText,
   InlineCitationCard,
   InlineCitationCardTrigger,
   InlineCitationCardBody,
   InlineCitationCarousel,
   InlineCitationCarouselContent,
   InlineCitationCarouselItem,
-  InlineCitationCarouselHeader,
-  InlineCitationCarouselIndex,
-  InlineCitationCarouselPrev,
-  InlineCitationCarouselNext,
   InlineCitationSource,
-  InlineCitationQuote,
 } from "@/components/ai-elements/inline-citation";
 import Link from "next/link";
 

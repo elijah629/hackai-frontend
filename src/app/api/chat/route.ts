@@ -17,6 +17,7 @@ import {
   upsertMessage,
 } from "@/lib/db/actions";
 import { Message, MessageMetadata, metadataSchema } from "@/types/message";
+import { ModelParameters } from "@/types/model-parameters";
 
 export const maxDuration = 300;
 
@@ -29,19 +30,29 @@ export async function POST(req: Request) {
 
   const apiKey = session.user.apiKey;
 
-  const {
-    id: chatId,
-    message,
-    model,
-    webSearch,
-    regenerate,
-  }: {
-    id: string;
-    message: Message;
-    model: string;
-    webSearch: boolean;
-    regenerate: boolean;
+  const requestParams: {
+    id?: string;
+    message?: Message;
+    model?: string;
+    webSearch?: boolean;
+    regenerate?: boolean;
+    parameters?: Partial<ModelParameters>;
   } = await req.json();
+
+  const chatId = requestParams.id;
+  const message = requestParams.message;
+
+  if (!chatId || !message) {
+    return new NextResponse("Bad Request", { status: 400 });
+  }
+
+  const model = requestParams.model ?? "google/gemini-2.5-flash";
+  const webSearch = requestParams.webSearch ?? false;
+  const parameters = requestParams.parameters ?? {
+    temperature: 0.3,
+  };
+
+  const regenerate = requestParams.regenerate ?? false;
 
   const chat = await loadChat(chatId, session.user.id);
 
@@ -91,11 +102,15 @@ export async function POST(req: Request) {
           usage: {
             include: true,
           },
+          web_search_options: webSearch
+            ? ({
+                search_context_size: "high",
+              } as any)
+            : undefined,
         }),
-        // TODO: allow temp control, etc
-        temperature: 0.3,
+        temperature: parameters.temperature,
         messages: convertToModelMessages(validatedMessages),
-        system: system({ webSearch }),
+        system: system(),
         experimental_transform: smoothStream({
           chunking: "word",
           delayInMs: 5,

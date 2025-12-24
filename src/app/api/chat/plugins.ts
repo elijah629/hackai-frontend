@@ -1,4 +1,5 @@
 import * as models from "@openrouter/sdk/models";
+import systemWeb from "./system-web.md";
 
 export function plugins({ webSearch }: { webSearch: boolean }): Array<
   | {
@@ -19,7 +20,7 @@ export function plugins({ webSearch }: { webSearch: boolean }): Array<
     }
 > {
   if (webSearch) {
-    return [{ id: "web" }];
+    return [{ id: "web", search_prompt: systemWeb }];
   }
 
   return [];

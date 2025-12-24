@@ -71,9 +71,10 @@ export async function getUsageMetrics(apiKey: string): Promise<UsageMetrics> {
 
 export async function getModelList() {
   const rawModels = (
-    (await fetch(BASE + "/models", { cache: "no-store" }).then((x) =>
-      x.json(),
-    )) as { data: RawModel[] }
+    (await fetch(BASE + "/models", {
+      cache: "force-cache",
+      next: { revalidate: 3600 },
+    }).then((x) => x.json())) as { data: RawModel[] }
   ).data;
 
   const models: Model[] = rawModels.map((model) => ({
