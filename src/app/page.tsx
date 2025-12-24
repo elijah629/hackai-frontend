@@ -21,7 +21,8 @@ export default function Page() {
                 </Suspense>
               </h1>
               <p className="mt-3 max-w-xl text-sm text-muted-foreground md:text-base">
-                Welcome to hackai! Get started by creating a new chat!
+                Welcome to hackai! Get started by signing in at the bottom left
+                and configuring an API key.
               </p>
             </div>
             <Form action={createChat}>
