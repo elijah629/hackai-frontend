@@ -67,7 +67,7 @@ export const MemoCitationA = memo<AProps>(
     return isCitation ? (
       <InlineCitation>
         <InlineCitationCard>
-          <Link href={citationLink!}>
+          <Link href={citationLink!} target="_blank">
             <InlineCitationCardTrigger sources={[citationLink!]} />
           </Link>
           <InlineCitationCardBody>
